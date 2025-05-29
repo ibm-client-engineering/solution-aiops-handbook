@@ -13,9 +13,9 @@
   {
     "objectID": "src/solution_overview/prepare.html",
     "href": "src/solution_overview/prepare.html",
-    "title": "Step One",
+    "title": "AIOps on Linux Planning",
     "section": "",
-    "text": "Step One Solution - The What\n(Summarize the overarching technical solution. Explain the reasoning and strategic considerations behind the solution)",
+    "text": "Networking\n\nCan you use an alternative port to 443 for the load balancer?\nNo. As of May 2025, this does not work and port 443 must be used as the UI port for the load balancer. There are AIOps services within the cluster that will attempt to access cp-console-aiops via port 443.\n\n\n\nOffline Installation\nOffline installations, also known as air-gapped deployment, is necessary if the target cluster will not have access to the internet.\n\nArtifactory\nIf planning for an offline installation using Artifactory as the target registry, ensure that Artifactory meets the requirements for AIOps.\n\nThe target repository layout must be set to Docker\nDocker V2 API must be enabled on the repository\n\n\n🧪 Docker repository validation\nLog in to the Artifactory UI and navigate to the target repository. There will be a type listed for the repository. That type should be Docker.\n\n\n🧪 Docker V2 API validation\nTest if the Docker v2 API is enabled by running:\ncurl -u &lt;username&gt;:&lt;password&gt; https://&lt;your-artifactory-domain&gt;/artifactory/&lt;repo-name&gt;/v2/\n\nIf it returns a 200 OK or 401 Unauthorized, the v2 API is enabled.\nIf it returns 404 Not Found, the repo may not support Docker v2.\n\n\n\n✅ Artifactory URL Format\nWhen configuring your container image mirroring to Artifactory, follow these guidelines carefully to ensure compatibility and avoid common pitfalls.\nWhen specifying the Artifactory URL during the mirroring process:\n\n❌ Do not include https:// at the beginning.\n✅ Do append :443 to the hostname.\n❌ Do not include /artifactory/ in the path like the file URL might display in the Artifactory UI. This is for file downloads only.\n✅ Use the format: &lt;artifactory-host&gt;:443/&lt;repo&gt;/&lt;path-to-images&gt;\n\nFor example, if your Artifactory host is my-artifactory.company.com and your repository is internal-repo, the correct URL might be: my-artifactory.company.com:443/internal-repo/aiops\n\n\n🖥️ Platform Requirements\nEnsure that you are running on RHEL 9 from the bastion host used to run the mirroring, as the oc version bundled with aiopsctl is compatible with RHEL 9.\nYou can verify your OS version with:\ncat /etc/redhat-release\nAnd check your oc version with:\noc version",
     "crumbs": [
       "Solution Overview",
       "Prepare"
@@ -45,19 +45,19 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Project Name",
+    "title": "AIOps Handbook",
     "section": "",
-    "text": "SL",
+    "text": "MD",
     "crumbs": [
       "Problem Definition"
     ]
   },
   {
-    "objectID": "index.html#description-project-name",
-    "href": "index.html#description-project-name",
-    "title": "Project Name",
-    "section": "Description: “Project Name”",
-    "text": "Description: “Project Name”",
+    "objectID": "index.html#description-aiops-handbook",
+    "href": "index.html#description-aiops-handbook",
+    "title": "AIOps Handbook",
+    "section": "Description: “AIOps Handbook”",
+    "text": "Description: “AIOps Handbook”",
     "crumbs": [
       "Problem Definition"
     ]
@@ -65,7 +65,7 @@
   {
     "objectID": "index.html#the-why",
     "href": "index.html#the-why",
-    "title": "Project Name",
+    "title": "AIOps Handbook",
     "section": "The Why",
     "text": "The Why\n(High-level description of the business challenges and client pain points)\n\nProblem Details\nSed elementum convallis quam, sed tempor massa dictum sit amet. Phasellus ultricies ante id massa scelerisque interdum. Vestibulum vitae volutpat felis. Sed metus magna, malesuada vitae odio eu, volutpat aliquam odio. Mauris eget purus ex. Praesent nec gravida lorem. Nam rhoncus bibendum nulla at viverra. Curabitur at diam sem. Pellentesque semper venenatis lorem quis pharetra. Cras venenatis consectetur ante vitae mattis. Etiam in augue vel nunc euismod sodales vitae eu arcu.\nMaecenas tempus ultricies sapien, porta suscipit est facilisis quis. Ut imperdiet massa condimentum sapien lobortis, dictum eleifend enim cursus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean interdum vel velit non dictum. Suspendisse bibendum neque ut nulla condimentum, quis dictum sem consectetur. Integer quis arcu sem. Sed condimentum dolor sed libero posuere, sed tristique nulla cursus. In hac habitasse platea dictumst. Aenean ullamcorper condimentum risus, at semper tortor consequat eu.\nPellentesque a semper nisl, a vehicula libero. Mauris aliquam porttitor nibh ut porttitor. Praesent eu sem lacinia, volutpat dolor id, interdum enim. Etiam sit amet urna rhoncus, iaculis ex hendrerit, suscipit urna. Duis id porta massa, ac ultrices nulla. Vestibulum ut rutrum lacus, ac vulputate libero. Sed metus massa, maximus ac vulputate nec, lacinia sit amet felis.\n\n\nAdditional Context\nSed elementum convallis quam, sed tempor massa dictum sit amet. Phasellus ultricies ante id massa scelerisque interdum. Vestibulum vitae volutpat felis. Sed metus magna, malesuada vitae odio eu, volutpat aliquam odio. Mauris eget purus ex. Praesent nec gravida lorem. Nam rhoncus bibendum nulla at viverra. Curabitur at diam sem. Pellentesque semper venenatis lorem quis pharetra. Cras venenatis consectetur ante vitae mattis. Etiam in augue vel nunc euismod sodales vitae eu arcu.\nMaecenas tempus ultricies sapien, porta suscipit est facilisis quis. Ut imperdiet massa condimentum sapien lobortis, dictum eleifend enim cursus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean interdum vel velit non dictum. Suspendisse bibendum neque ut nulla condimentum, quis dictum sem consectetur. Integer quis arcu sem. Sed condimentum dolor sed libero posuere, sed tristique nulla cursus. In hac habitasse platea dictumst. Aenean ullamcorper condimentum risus, at semper tortor consequat eu.\nPellentesque a semper nisl, a vehicula libero. Mauris aliquam porttitor nibh ut porttitor. Praesent eu sem lacinia, volutpat dolor id, interdum enim. Etiam sit amet urna rhoncus, iaculis ex hendrerit, suscipit urna. Duis id porta massa, ac ultrices nulla. Vestibulum ut rutrum lacus, ac vulputate libero. Sed metus massa, maximus ac vulputate nec, lacinia sit amet felis.",
     "crumbs": [

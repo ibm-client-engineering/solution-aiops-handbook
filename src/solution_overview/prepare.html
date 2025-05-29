@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Step One – AIOps Handbook</title>
+<title>AIOps on Linux Planning – AIOps Handbook</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -218,7 +253,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#step-one-solution---the-what" id="toc-step-one-solution---the-what" class="nav-link active" data-scroll-target="#step-one-solution---the-what">Step One Solution - The What</a></li>
+  <li><a href="#networking" id="toc-networking" class="nav-link active" data-scroll-target="#networking">Networking</a></li>
+  <li><a href="#offline-installation" id="toc-offline-installation" class="nav-link" data-scroll-target="#offline-installation">Offline Installation</a></li>
   </ul>
 </nav>
     </div>
@@ -227,7 +263,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../src/solution_overview/prepare.html">Solution Overview</a></li><li class="breadcrumb-item"><a href="../../src/solution_overview/prepare.html">Prepare</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Step One</h1>
+<h1 class="title">AIOps on Linux Planning</h1>
 </div>
 
 
@@ -244,11 +280,59 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="step-one-solution---the-what" class="level3">
-<h3 class="anchored" data-anchor-id="step-one-solution---the-what">Step One Solution - The What</h3>
-<p>(Summarize the overarching technical solution. Explain the reasoning and strategic considerations behind the solution)</p>
+<section id="networking" class="level3">
+<h3 class="anchored" data-anchor-id="networking">Networking</h3>
+<section id="can-you-use-an-alternative-port-to-443-for-the-load-balancer" class="level4">
+<h4 class="anchored" data-anchor-id="can-you-use-an-alternative-port-to-443-for-the-load-balancer">Can you use an alternative port to 443 for the load balancer?</h4>
+<p><strong>No</strong>. As of May 2025, this does not work and port 443 must be used as the UI port for the load balancer. There are AIOps services within the cluster that will attempt to access <code>cp-console-aiops</code> via port 443.</p>
+</section>
+</section>
+<section id="offline-installation" class="level3">
+<h3 class="anchored" data-anchor-id="offline-installation">Offline Installation</h3>
+<p>Offline installations, also known as air-gapped deployment, is necessary if the target cluster will not have access to the internet.</p>
+<section id="artifactory" class="level4">
+<h4 class="anchored" data-anchor-id="artifactory">Artifactory</h4>
+<p>If planning for an offline installation using Artifactory as the target registry, ensure that Artifactory meets the requirements for AIOps.</p>
+<ul>
+<li>The target repository layout must be set to <strong>Docker</strong></li>
+<li><strong>Docker V2 API</strong> must be enabled on the repository</li>
+</ul>
+<section id="docker-repository-validation" class="level5">
+<h5 class="anchored" data-anchor-id="docker-repository-validation">🧪 Docker repository validation</h5>
+<p>Log in to the Artifactory UI and navigate to the target repository. There will be a type listed for the repository. That type should be Docker.</p>
+</section>
+<section id="docker-v2-api-validation" class="level5">
+<h5 class="anchored" data-anchor-id="docker-v2-api-validation">🧪 Docker V2 API validation</h5>
+<p>Test if the Docker v2 API is enabled by running:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span>:<span class="op">&lt;</span>password<span class="op">&gt;</span> https://<span class="op">&lt;</span>your-artifactory-domain<span class="op">&gt;</span>/artifactory/<span class="op">&lt;</span>repo-name<span class="op">&gt;</span>/v2/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li>If it returns a <code>200 OK</code> or <code>401 Unauthorized</code>, the v2 API is enabled.</li>
+<li>If it returns <code>404 Not Found</code>, the repo may not support Docker v2.</li>
+</ul>
+</section>
+<section id="artifactory-url-format" class="level5">
+<h5 class="anchored" data-anchor-id="artifactory-url-format">✅ Artifactory URL Format</h5>
+<p>When configuring your container image mirroring to Artifactory, follow these guidelines carefully to ensure compatibility and avoid common pitfalls.</p>
+<p>When specifying the Artifactory URL during the mirroring process:</p>
+<ul>
+<li>❌ <strong>Do not</strong> include <code>https://</code> at the beginning.</li>
+<li>✅ <strong>Do</strong> append <code>:443</code> to the hostname.</li>
+<li>❌ <strong>Do not</strong> include <code>/artifactory/</code> in the path like the file URL might display in the Artifactory UI. This is for file downloads only.</li>
+<li>✅ Use the format: <code>&lt;artifactory-host&gt;:443/&lt;repo&gt;/&lt;path-to-images&gt;</code></li>
+</ul>
+<p>For example, if your Artifactory host is <code>my-artifactory.company.com</code> and your repository is <code>internal-repo</code>, the correct URL might be: <code>my-artifactory.company.com:443/internal-repo/aiops</code></p>
+</section>
+<section id="platform-requirements" class="level5">
+<h5 class="anchored" data-anchor-id="platform-requirements">🖥️ Platform Requirements</h5>
+<p>Ensure that you are running on <strong>RHEL 9</strong> from the bastion host used to run the mirroring, as the <code>oc</code> version bundled with <code>aiopsctl</code> is compatible with RHEL 9.</p>
+<p>You can verify your OS version with:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /etc/redhat-release</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And check your oc version with:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> version</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->
