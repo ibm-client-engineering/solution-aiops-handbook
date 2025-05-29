@@ -6,7 +6,7 @@ language:
       search-text-placeholder: Search
 
 website:
-  title: Solutions Hub
+  title: AIOps Handbook
   favicon: images/bee.png
   page-navigation: true
   search: 
@@ -18,7 +18,7 @@ website:
     logo: images/IBMlogo.png
     right: 
       - icon: github
-        href: https://github.com/ibm-client-engineering/solution-template-quarto
+        href: https://github.com/ibm-client-engineering/solution-aiops-handbook
         target: "_blank"
       - icon: linkedin
         menu:
