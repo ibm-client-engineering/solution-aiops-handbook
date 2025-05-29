@@ -1,0 +1,8 @@
+---
+title: "Step One"
+format: html
+---
+
+### Step One Implementation - The How
+
+(Details the process and techniques used to execute the technical solution)

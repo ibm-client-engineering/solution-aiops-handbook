@@ -1,0 +1,39 @@
+language: python
+python: 
+  - "3.9"
+
+branches:
+  only:
+  - main
+
+# env:
+#   - GITHUB_TOKEN: $secrets.GITHUB_TOKEN
+
+jobs:
+  include:
+    - stage: build and deploy pages
+      before_install:
+        - rm ~/.netrc
+      install:
+        - pip install quarto-cli
+      script:
+        - quarto render --output-dir build
+#      script: 
+#        - quarto publish gh-pages --no-prompt --no-browser --token $GITHUB_TOKEN
+
+      before_deploy: 
+      - rvm --default use 2.7.6
+      deploy:
+      - provider: pages
+        edge:
+          branch: v1.10.16
+        github_url: github.ibm.com
+        github_token: $GITHUB_TOKEN
+        target_branch: gh-pages
+        skip_cleanup: true
+        local_dir: build
+        on:
+          branch: main
+
+stages:
+  - build and deploy pages

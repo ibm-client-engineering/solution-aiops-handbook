@@ -1,0 +1,39 @@
+---
+format:
+  html:
+    theme: 
+      - src/custom.scss
+      - src/landing_page/landing_page.scss
+
+---
+
+# Project Name
+
+Subtitle
+
+:::: {.columns}
+
+::: {.column width="40%"}
+ <button onclick="window.location.href='problem_statement.qmd';" class = "btn btn-our-doc">Our Documentation </button>
+:::
+
+::: {.column width="60%"}
+![](/images/IBMlogo.png){width=400}
+:::
+
+:::: 
+
+### Next Steps
+
+:::: {.columns}
+
+::: {.column width="50%"}  
+<button onclick="window.location.href='problem_statement.qmd';" class = "btn btn-external-link">L ink 1</button> 
+:::
+
+::: {.column width="50%"}
+<button onclick="window.location.href='problem_statement.qmd';" class = "btn btn-external-link">Link 2</button>
+:::
+
+:::: 
+

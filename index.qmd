@@ -1,0 +1,38 @@
+
+---
+title: "Project Name"
+subtitle: "Subtitle"
+format: html
+---
+```{=html}
+<span class="dot">SL</span> &ensp;Samuel Lee&ensp;
+```
+```{=html}
+<span class="dot">BK</span> &ensp;Bo Kulbacki&ensp;
+```
+<br>
+---
+Description: "Project Name"
+---
+
+## The Why
+
+(High-level description of the business challenges and client pain points)
+
+### Problem Details
+
+Sed elementum convallis quam, sed tempor massa dictum sit amet. Phasellus ultricies ante id massa scelerisque interdum. Vestibulum vitae volutpat felis. Sed metus magna, malesuada vitae odio eu, volutpat aliquam odio. Mauris eget purus ex. Praesent nec gravida lorem. Nam rhoncus bibendum nulla at viverra. Curabitur at diam sem. Pellentesque semper venenatis lorem quis pharetra. Cras venenatis consectetur ante vitae mattis. Etiam in augue vel nunc euismod sodales vitae eu arcu.
+
+Maecenas tempus ultricies sapien, porta suscipit est facilisis quis. Ut imperdiet massa condimentum sapien lobortis, dictum eleifend enim cursus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean interdum vel velit non dictum. Suspendisse bibendum neque ut nulla condimentum, quis dictum sem consectetur. Integer quis arcu sem. Sed condimentum dolor sed libero posuere, sed tristique nulla cursus. In hac habitasse platea dictumst. Aenean ullamcorper condimentum risus, at semper tortor consequat eu.
+
+Pellentesque a semper nisl, a vehicula libero. Mauris aliquam porttitor nibh ut porttitor. Praesent eu sem lacinia, volutpat dolor id, interdum enim. Etiam sit amet urna rhoncus, iaculis ex hendrerit, suscipit urna. Duis id porta massa, ac ultrices nulla. Vestibulum ut rutrum lacus, ac vulputate libero. Sed metus massa, maximus ac vulputate nec, lacinia sit amet felis.
+
+
+### Additional Context
+
+Sed elementum convallis quam, sed tempor massa dictum sit amet. Phasellus ultricies ante id massa scelerisque interdum. Vestibulum vitae volutpat felis. Sed metus magna, malesuada vitae odio eu, volutpat aliquam odio. Mauris eget purus ex. Praesent nec gravida lorem. Nam rhoncus bibendum nulla at viverra. Curabitur at diam sem. Pellentesque semper venenatis lorem quis pharetra. Cras venenatis consectetur ante vitae mattis. Etiam in augue vel nunc euismod sodales vitae eu arcu.
+
+Maecenas tempus ultricies sapien, porta suscipit est facilisis quis. Ut imperdiet massa condimentum sapien lobortis, dictum eleifend enim cursus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean interdum vel velit non dictum. Suspendisse bibendum neque ut nulla condimentum, quis dictum sem consectetur. Integer quis arcu sem. Sed condimentum dolor sed libero posuere, sed tristique nulla cursus. In hac habitasse platea dictumst. Aenean ullamcorper condimentum risus, at semper tortor consequat eu.
+
+Pellentesque a semper nisl, a vehicula libero. Mauris aliquam porttitor nibh ut porttitor. Praesent eu sem lacinia, volutpat dolor id, interdum enim. Etiam sit amet urna rhoncus, iaculis ex hendrerit, suscipit urna. Duis id porta massa, ac ultrices nulla. Vestibulum ut rutrum lacus, ac vulputate libero. Sed metus massa, maximus ac vulputate nec, lacinia sit amet felis.
+

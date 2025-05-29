@@ -1,0 +1,72 @@
+project:
+  type: website
+  output-dir: docs
+
+language: 
+      search-text-placeholder: Search
+
+website:
+  title: Solutions Hub
+  favicon: images/bee.png
+  page-navigation: true
+  search: 
+    type: textbox
+    show-item-context: true
+    location: navbar
+  navbar:
+    pinned: true
+    logo: images/IBMlogo.png
+    right: 
+      - icon: github
+        href: https://github.com/ibm-client-engineering/solution-template-quarto
+        target: "_blank"
+      - icon: linkedin
+        menu:
+          - text: Share on your LinkedIn
+            href:  http://linkedin.com/post
+            target: "_blank"
+          - text:  IBM LinkedIn
+            href:  https://www.linkedin.com/company/ibm/
+            target: "_blank"
+  sidebar:
+    - title: "Contents"
+      style: docked
+      collapse-level: 1
+      search: false
+      contents:
+        - href: index.qmd
+          text: Problem Definition
+        - section: Solution Overview
+          contents:
+          - text: Prepare
+            href: src/solution_overview/prepare.qmd
+          - text: Environment 
+            href: src/solution_overview/environment.qmd
+          - text: Troubleshooting
+            href: src/solution_overview/troubleshooting.qmd
+        - section: Implementation Methodology
+          contents:
+          - text: Step One
+            href: src/implementation_methodology/stepone-imp.qmd
+          - text: Step Two
+            href: src/implementation_methodology/steptwo-imp.qmd
+          - text: Step Three
+            href: src/implementation_methodology/stepthree-imp.qmd
+        - text: Key Takeaways
+          href: src/key-takeaway.qmd
+
+
+  page-footer: 
+    background: black
+    left: 
+        <div class ="listitem"><a href="https://ibm.com" rel="noopener noreferrer" class="footerLogo"><img src="https://www.ibm.com/brand/experience-guides/developer/8f4e3cc2b5d52354a6d43c8edba1e3c9/02_8-bar-reverse.svg" alt="IBM Logo" class="footer__logo themedComponent_node_modules-@docusaurus-theme-common-lib-components-ThemedComponent-styles-module themedComponent--light_node_modules-@docusaurus-theme-common-lib-components-ThemedComponent-styles-module" width="250" height="250"></a></div>  
+        
+    
+format:
+  html:
+    theme: src/custom.scss
+    toc: true
+    toc-location: right
+
+
+

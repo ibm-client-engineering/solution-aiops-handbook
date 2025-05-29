@@ -1,0 +1,344 @@
+/*-- scss:functions --*/
+// Function for converting a color to RGB format (currently not used but can be utilized for dynamic color rendering)
+// @function colorToRGB ($color) {
+//     @return "rgb(" + red($color) + ", " + green($color) + ", " + blue($color)+ ")";
+// }
+
+/* Import IBM Plex Sans font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+/*-- scss:defaults --*/
+/* Define a root variable for consistent margin calculation */
+:root {
+    --margin-max-width: calc((100% - calc(1550px - 1.5em)) / 2)
+}
+
+/*-- scss:rules --*/
+/* General Navbar Styling */
+.navbar {
+    background-color: #ffffff; /* Light gray background */
+    border-block-end: 1px solid #E0E0E0; /* Bottom border with a light gray color */
+}
+
+
+/* Navbar Logo Size */
+.navbar-logo {
+    max-height: 75px; /* Restrict the height of the logo */
+    margin-left: -20px;
+}
+
+/* Navbar Margin Sizing Target */
+.navbar > .container, .navbar > .container-fluid, .navbar > .container-sm, .navbar > .container-md, .navbar > .container-lg, .navbar > .container-xl, .navbar > .container-xxl 
+{ 
+    margin-top: -10px; /* Reducing the top margin size */
+    margin-bottom: -10px; /* Reducing the bottom margin size */
+}
+
+/* Target the search container and components */
+.aa-Dropdown-menu,
+.aa-Form,
+.aa-DetachedSearchButtonPlaceholder,
+.navbar #quarto-search.type-overlay .aa-Autocomplete {
+    width: 300px !important;
+    height: 40px !important;
+    max-width: 300px !important;
+}
+
+/* Navbar Page Text Styling */
+.nav-page .nav-page-text {
+    font-size: 16pt; /* Larger font size for emphasis */
+    color: #0f62fe !important; /* IBM primary blue color */
+}
+
+/* Sidebar Active Item Highlight Styling */
+div.sidebar-item-container .active, div.sidebar-item-container .show > .nav-link, div.sidebar-item-container .sidebar-link > code {
+    color: #0f62fe !important; /* Text color in IBM primary blue */
+    background-color: #E9E9E9; /* Light blue background for active state */
+    border-left: 4px solid #0f62fe; /* Thin blue line on the left */
+    border-radius: 0 4px 4px 0; /* Rounded corners only on the right side */
+    padding: 0.5rem 0.75rem; /* Internal padding for spacing */
+    margin-left: -0.75rem; /* Adjust alignment with the left margin */
+}
+
+/* General Sidebar Item Padding */
+.sidebar-item {
+    padding: .2rem; /* Adds padding for better spacing */
+}
+
+/* Sidebar Menu Container Text Color */
+.sidebar-menu-container {
+    color: #0f62fe !important; /* IBM primary blue color */
+}
+
+/* Reduce Padding for First Sidebar Section */
+.quarto-sidebar-section-1 {
+    padding-bottom: 0;
+}
+
+/* Navbar Brand Text Styling */
+.navbar-brand {
+    color: black; /* Default color */
+    font-weight: 600;
+    position: relative;
+    display: block;
+    -webkit-padding-start: 1rem;
+    padding-inline-start: 1rem;
+}
+
+.navbar-brand:not(.navbar-brand-logo):before {
+    position: absolute;
+    display: block;
+    background-color: #DEE2E6;
+    block-size: 2rem;
+    content: "";
+    inline-size: .0625rem;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    transform: translateY(-50%);
+}
+
+
+/* Navbar Brand Hover State */
+.navbar-brand:hover {
+    color: black; /* Prevents color change on hover */
+}
+
+/* Margin Sidebar Background Color */
+#quarto-margin-sidebar {
+    background-color: #FFFFFF; /* White background for margin sidebar */
+}
+
+/* Remove Border and Padding for Sidebar TOC Links */
+.sidebar nav[role=doc-toc] {
+    opacity: .8;
+    font-weight: 400;
+    font-size: .925rem;
+    line-height: 17px;
+    padding: 0.5rem 0.75rem; /* Internal padding for spacing */
+}
+
+.sidebar nav[role=doc-toc] ul>li>ul>li>a, .sidebar nav[role=doc-toc]>ul a {
+    border-left: none; /* Removes border from TOC links */
+    padding-left: calc(1rem + 4px);
+}
+
+/* Highlight Active State in Sidebar TOC */
+.sidebar nav[role=doc-toc] ul>li>a.active, .sidebar nav[role=doc-toc] ul>li>ul>li>a.active {
+    border-left: 4px solid #0f62fe; /* Thin blue left border */
+    border-radius: 0 4px 4px 0; /* Rounded right corners */
+    padding-left: 1rem;
+    color: black !important;
+}
+
+/* Autocomplete Search Form Width */
+.navbar .aa-Autocomplete .aa-Form {
+    width: 250px; /* Fixed width for the search bar */
+}
+
+/* Body and Global Font Styling */
+body {
+    font-family: "IBM Plex Sans", serif; /* Consistent font family */
+    background-color: #FFFFFF; /* White background */
+}
+
+* {
+    font-family: "IBM Plex Sans", serif; /* Enforces font globally */
+}
+
+.navbar #quarto-search.type-overlay .aa-Autocomplete svg.aa-SubmitIcon {
+    width: 26px;
+    height: 26px;
+    color: #525252;
+    opacity: 1;
+}
+
+nav .nav-link i, nav .dropdown-item i {
+    height: 26px;
+    width: 26px;
+}
+
+/* Icon Styling for GitHub and LinkedIn */
+.bi-github {
+    color: black; /* GitHub icon in black */
+    font-size: 24px !important;
+    width: 50px !important;
+    height: 50px !important;
+}
+/* Specific styling for brand icons */
+.bi-linkedin {
+    color: black; /* LinkedIn icon in blue */
+    font-size: 24px !important;
+    height: 50px; /* Icon height */
+    width: 50px; /* Icon width */
+}
+
+/* Style the page navigation container */
+.page-navigation {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0rem;
+}
+
+/* Style individual navigation containers */
+.nav-page {
+    flex: 1;
+    max-width: 50%;
+    padding: 1rem;
+    background-color: #ffffff;
+    margin: 0;
+    display: flex;
+    align-items: center;      /* Center items vertically */
+}
+
+/* Style the navigation links */
+.nav-page a {
+    display: flex;
+    align-items: center;      /* Align arrow with text */
+    text-decoration: none;
+    width: 100%;             /* Take full width of container */
+    justify-content: inherit;
+}
+
+/* Style the navigation next button - right align */
+.nav-page-next{
+    justify-content: end; /* Justifies the navigation links to the end */
+}
+
+/* Style the navigation previous button - left align */
+.nav-page-previous {
+    justify-content: start; /* Justifies the navigation links to the start */
+}
+
+/* Style the dot for the authors section  */
+.dot {
+    height: 25px;
+    width: 25px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block;
+    text-align: center;
+    color: white;
+    background-color: #0072C3; 
+    font-size: 9pt;
+    align-items: center;
+    vertical-align: bottom;
+    justify-content: center;
+    display: inline-flex;
+}
+
+
+/* Only apply hover effect to nav items with content */
+.nav-page:has(a):hover {
+    background-color: #E8E8E8;
+}
+
+/* Remove hover effect from empty nav items */
+.nav-page:not(:has(a)) {
+    background-color: transparent !important;
+    pointer-events: none;
+}
+
+.nav-page:not(:has(a)):hover {
+    background-color: transparent !important;
+}
+
+
+/* Style the navigation text */
+.nav-page-text {
+    color: #ffffff !important;    /* White text */
+    font-size: 4rem;
+    margin: 0 1rem;
+}
+
+/* Style the Previous/Next labels */
+.nav-page small {
+    color: #c6c6c6;              /* Light gray for labels */
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+
+/* Media Query for Grid Layout on Larger Screens */
+@media (min-width: 992px) {
+    #quarto-content.page-columns {
+        grid-template-columns: 1.5em [screen-start] 1.5em [screen-start-inset page-start] minmax(50px, 100px) [page-start-inset] 50px [body-start-outset] 150px [body-start] minmax(1.5em, var(--margin-max-width)) [body-content-start] minmax(500px, calc(1000px - 3em)) [body-content-end] minmax(1.5em, var(--margin-max-width)) [body-end] 50px [body-end-outset] minmax(50px, 100px) [page-end-inset] 50px [page-end] 5fr [screen-end-inset] 1.5em [screen-end];
+    }
+}
+
+/* Footer Styling */
+.footer {
+    font-size: 1rem; /* Base font size */
+    font-weight: 400; /* Regular font weight */
+    line-height: 1.125rem; /* Line height */
+    letter-spacing: .16px; /* Consistent letter spacing */
+    width: 100%; /* Full-width footer */
+    background: #000; /* Black background */
+    color: #FFFFFF; /* White text */
+    position: relative; /* Keeps footer above other elements */
+    z-index: 2; /* Ensures stacking context */
+}
+
+/* Footer Navigation Container */
+.nav-footer {
+    align-items: center; /* Center align items vertically */
+    min-height: 370px; /* Minimum height for the footer */
+    padding-top: 2rem; /* Top padding */
+    padding-bottom: 2rem; /* Bottom padding */
+    justify-content: space-between; /* Space between elements */
+    color: #e8e8e8; /* Light gray text color */
+}
+
+/* Footer Left Section */
+.nav-footer-left {
+    text-align: left; /* Aligns content to the center */
+    vertical-align: top; /* Aligns to the top */
+}
+
+/* Footer Center Image Styling */
+.nav-footer-left img {
+    text-align: left;
+    vertical-align: top; /* Aligns image to the top */
+    margin-left: -10px; /* Aligns image to the IBM logo in the header */
+}
+
+/* Footer Center Section */
+.nav-footer-center {
+    text-align: center; /* Aligns content to the center */
+    vertical-align: top; /* Aligns to the top */
+}
+
+/* Footer Right Section */
+.nav-footer-right {
+    text-align: left; /* Aligns text to the left */
+}
+
+/* Text Alignment for CE Section */
+.CEText {
+    text-align: left; /* Aligns text to the left */
+    padding-left: 40px; /* Adds padding on the left */
+}
+
+/* List Item Styling */
+.listitem {
+    width: 100%; /* Full width for list items */
+    margin-left: 0; /* No margin on the left */
+}
+
+a[role=listitem] {
+    color: #e8e8e8; /* Light gray link color */
+}
+
+/* Footer Bottom Section */
+.footer__bottom {
+    width: 100%; /* Full width */
+    text-align: center; /* Center align content */
+}
+
+/* Footer Logo Styling */
+.footerLogo {
+    color: #f7f2f2; /* Light gray logo color */
+    vertical-align: top; /* Aligns logo to the top */
+}
