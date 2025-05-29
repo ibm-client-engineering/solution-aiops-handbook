@@ -1,8 +1,68 @@
 ---
-title: "Step One"
+title: "AIOps on Linux Planning"
 format: html
 ---
 
-### Step One Solution - The What
+### Networking
 
-(Summarize the overarching technical solution. Explain the reasoning and strategic considerations behind the solution)
+#### Can you use an alternative port to 443 for the load balancer?
+
+**No**. As of May 2025, this does not work and port 443 must be used as the UI port for the load balancer. There are AIOps services
+within the cluster that will attempt to access `cp-console-aiops` via port 443.
+
+### Offline Installation
+
+Offline installations, also known as air-gapped deployment, is necessary if the target cluster will not have access to the internet.
+
+#### Artifactory
+
+If planning for an offline installation using Artifactory as the target registry, ensure that Artifactory meets the requirements for AIOps.
+
+- The target repository layout must be set to **Docker**
+- **Docker V2 API** must be enabled on the repository
+
+##### 🧪 Docker repository validation
+
+Log in to the Artifactory UI and navigate to the target repository. There will be a type listed for the repository. That type should be
+Docker.
+
+##### 🧪 Docker V2 API validation
+
+Test if the Docker v2 API is enabled by running:
+
+```bash
+curl -u <username>:<password> https://<your-artifactory-domain>/artifactory/<repo-name>/v2/
+```
+
+- If it returns a `200 OK` or `401 Unauthorized`, the v2 API is enabled.
+- If it returns `404 Not Found`, the repo may not support Docker v2.
+
+##### ✅ Artifactory URL Format
+
+When configuring your container image mirroring to Artifactory, follow these guidelines carefully to ensure compatibility and avoid common pitfalls.
+
+When specifying the Artifactory URL during the mirroring process:
+
+- ❌ **Do not** include `https://` at the beginning.
+- ✅ **Do** append `:443` to the hostname.
+- ❌ **Do not** include `/artifactory/` in the path like the file URL might display in the Artifactory UI. This is for file downloads only.
+- ✅ Use the format: `<artifactory-host>:443/<repo>/<path-to-images>`
+
+For example, if your Artifactory host is `my-artifactory.company.com` and your repository is `internal-repo`, the correct URL might be: 
+`my-artifactory.company.com:443/internal-repo/aiops`
+
+##### 🖥️ Platform Requirements
+
+Ensure that you are running on **RHEL 9** from the bastion host used to run the mirroring, as the `oc` version bundled with `aiopsctl` is compatible with RHEL 9.
+
+You can verify your OS version with:
+
+```bash
+cat /etc/redhat-release
+```
+
+And check your oc version with:
+
+```bash
+oc version
+```
