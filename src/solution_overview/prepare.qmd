@@ -10,9 +10,88 @@ format: html
 **No**. As of May 2025, this does not work and port 443 must be used as the UI port for the load balancer. There are AIOps services
 within the cluster that will attempt to access `cp-console-aiops` via port 443.
 
+### Non-root Users
+
+The installation of AIOps on Linux requires root (or `sudo`) and the underlying components run as root on the nodes. However, you
+can configure your nodes such that a non-root user can do most types of administrative tasks after the installation.
+
+The commands below can be run as root after `cluster node up` is successful on the control plane (k3s server) nodes to configure a group
+called `k3sadmin` that will allow a non-root user called `clouduser` to run administrative commands.
+
+```bash
+groupadd k3sadmin
+usermod -aG k3sadmin clouduser
+
+chown root:k3sadmin /usr/local/bin/k3s
+chmod 750 /usr/local/bin/k3s
+
+chown root:k3sadmin /etc/rancher/
+chmod 750 /etc/rancher/
+
+chown -R root:k3sadmin /etc/rancher/k3s/
+chmod 750 /etc/rancher/k3s/
+
+chmod 750 /etc/rancher/k3s/config.yaml
+chmod 660 /etc/rancher/k3s/k3s.yaml
+
+# for ctr
+chown root:k3sadmin /var/lib/rancher/k3s/agent/etc/
+chmod 750 /var/lib/rancher/k3s/agent/etc/
+# for crictl
+chown root:k3sadmin /var/lib/rancher/k3s/agent/etc/crictl.yaml
+chmod 640 /var/lib/rancher/k3s/agent/etc/crictl.yaml
+
+# ONLY for online installs, oc is not available for offline installs
+# for oc
+mkdir -p /home/clouduser/.kube
+cp /etc/rancher/k3s/k3s.yaml /home/clouduser/.kube/config
+chown -R clouduser:clouduser /home/clouduser/.kube
+```
+
+After executing these commands, `clouduser` will be able to run `kubectl`, `crictl`, `ctr`, `aiopsctl`, and `oc` (if online install is used).
+
+#### ❓ Where is `oc` in my offline install?
+
+The `oc` binary is downloaded from openshift.com during installation. For an offline install it assumed that access to openshift.com is not
+present. But don't worry, you can use `kubectl` instead. :-)
+
 ### Offline Installation
 
 Offline installations, also known as air-gapped deployment, is necessary if the target cluster will not have access to the internet.
+
+#### ❗ Security scanning for container images ❗
+
+IBM does internal security scanning of container images but it is very common for enterprises to require their own security scans for
+container images prior to allowing installation. ***THIS CAN BE A VERY LENGTHY PROCESS***. Cloud Pak for AIOPs runs on over 400 different
+container images and every enterprise handles this situation differently. 
+
+If this is a requirement for your enterprise, get started on this process **first** as it may quickly become a blocker for
+the deployment schedule.
+
+##### ❓ Where do I find the list of container images?
+
+The container images for Cloud Pak for AIOps can vary depending on release. The recommended way to get the list is to attempt
+a mirroring via `aiopsctl bastion mirror-images` command. This will generate a file called `images-mapping.txt` under `~/.aiopsctl`.
+The directory will differ depending on the release, but for v4.9.1 the location is 
+`~/.aiopsctl/mirror/.ibm-pak/data/mirror/ibm-cp-waiops/1.15.1`
+
+Example of `images-mapping.txt` (only first 4 lines shown):
+
+```txt
+cp.icr.io/cp/appc/ace-server-prod@sha256:2f9e903bd2cf53ba0878e982ac0f81d956200ffe70a9a57084c2b31bf9134311=artifactory.gym.lan:8443/docker-local/cp/appc/ace-server-prod:13.0.2.2-r2-20250315-121329
+cp.icr.io/cp/appc/acecc-content-server-prod@sha256:4a558be37f530acc1c2395187bbe6d896a2f8dca3c2c9977eb66b7e984805abe=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-content-server-prod:13.0.2.2-r2-20250318-034910
+cp.icr.io/cp/appc/acecc-couchdb3-prod@sha256:c18d850494ba2ee8a90859430e4cd7ea2e6c342eea750afc816f450520dd42c8=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-couchdb3-prod:13.0.2.2-r2-20250318-020015
+cp.icr.io/cp/appc/acecc-dashboard-prod@sha256:ab27d8031bb8ec87a3e465c4e172d9c57cd0b415db78d8305e45f74820949d58=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-dashboard-prod:13.0.2.2-r2-20250325-140612
+```
+
+For each line, the section before `=` is the source container image from IBM container registry.
+
+To list only the source images from the `images-mapping.txt` file, use the following command:
+
+```bash
+awk -F= '{print $1}' images-mapping.txt
+```
+
 
 #### Artifactory
 
@@ -25,6 +104,8 @@ If planning for an offline installation using Artifactory as the target registry
 
 Log in to the Artifactory UI and navigate to the target repository. There will be a type listed for the repository. That type should be
 Docker.
+
+![](images/artifactory_docker.png)
 
 ##### 🧪 Docker V2 API validation
 
