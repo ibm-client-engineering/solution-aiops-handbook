@@ -62,18 +62,34 @@ Offline installations, also known as air-gapped deployment, is necessary if the 
 #### ❗ Security scanning for container images ❗
 
 IBM does internal security scanning of container images but it is very common for enterprises to require their own security scans for
-container images prior to allowing installation. ***THIS CAN BE A VERY LENGTHY PROCESS***. Cloud Pak for AIOPs runs on over 400 different
+container images prior to allowing installation. ***THIS CAN BE A VERY LENGTHY PROCESS***. Cloud Pak for AIOPs publishes over 400 different
 container images and every enterprise handles this situation differently. 
 
 If this is a requirement for your enterprise, get started on this process **first** as it may quickly become a blocker for
 the deployment schedule.
 
-##### ❓ Where do I find the list of container images?
+##### ❓ Where do I find the list of container images ❓
 
-The container images for Cloud Pak for AIOps can vary depending on release. The recommended way to get the list is to attempt
-a mirroring via `aiopsctl bastion mirror-images` command. This will generate a file called `images-mapping.txt` under `~/.aiopsctl`.
-The directory will differ depending on the release, but for v4.9.1 the location is 
-`~/.aiopsctl/mirror/.ibm-pak/data/mirror/ibm-cp-waiops/1.15.1`
+The container images for Cloud Pak for AIOps can vary depending on release. There is no way to have the `aiopsctl` command generate list without also 
+attempting to mirror the images. Here is a hack that will kill the process after it generates the proper manifest file but before the mirroring 
+starts (change the `--registry` parameter value to match your environment):
+
+```bash
+# run aiopsctl bastion login commands for both icr.io and the target registry first
+aiopsctl bastion mirror-images --registry artifactory.gym.lan:8443/docker-local 2>&1 | tee >(
+    while read line; do
+        if [[ "$line" == *'Mirroring images to registry'* ]]; then
+            echo "String found. Killing process..."
+            pkill -P $$ aiopsctl
+            exit 0
+        fi
+    done
+)
+```
+
+This will generate a file called `images-mapping.txt` under `~/.aiopsctl`.
+The directory will differ depending on the release, but for v4.10.1 the location is 
+`~/.aiopsctl/mirror/.ibm-pak/data/mirror/ibm-cp-waiops/1.16.1`
 
 Example of `images-mapping.txt` (only first 4 lines shown):
 
@@ -92,6 +108,109 @@ To list only the source images from the `images-mapping.txt` file, use the follo
 awk -F= '{print $1}' images-mapping.txt
 ```
 
+##### ❓ Do I really need *all* of these container images ❓
+
+Maybe. The container images that make up a release contain back-level images for upgrade purposes.
+If you are installing AIOps for the first time, you do not need the full set of container images.
+This is an important detail as security scans might pick up vulnerabilities on container images that are not used in the current version of the product.
+
+For example, AIOps might use kafka v3.9.0. However, for upgrade purposes kafka v3.8.0 and v3.6.1 are also be part of the container image manifest.
+If a security scan finds vulnerabilities in the kafka v3.8.0 image, those can be safely ignore for a new installation as they won't be used.
+
+##### ❓ How do I reduce the image manifest ❓
+ 
+**WARNING:** Be very careful and only attempt this if you know what are you doing. You risk not including a required container image and the below has only been tested on v4.10.1. 
+
+Go to the directoy containing the `images-mapping.txt` file generated from the `bastion mirror-images` command. The following
+command will create a new file called `images-mapping-filtered.txt` with most of the back-level container images removed.
+
+```bash
+awk 'NR==FNR {split($0, a, "@"); split($0, b, ":"); if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) versioned_images[a[1]]++; next} {split($0, a, "@"); split($0, b, ":"); if (!(a[1] in versioned_images && b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) print}' images-mapping.txt images-mapping.txt > images-mapping-filtered.txt
+```
+
+Handle the kafka containers separately with this command.
+
+```bash
+awk '
+    NR==FNR {
+        if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {
+            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);
+            if (m[1] > max_kafka_version) {
+                max_kafka_version = m[1];
+            }
+        } else {
+            split($0, a, "@");
+            split($0, b, ":");
+            if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) {
+                versioned_images[a[1]]++;
+            }
+        }
+        next;
+    }
+    {
+        if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {
+            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);
+            if (m[1] == max_kafka_version) {
+                print;
+            }
+        } else {
+            split($0, a, "@");
+            split($0, b, ":");
+            if (!(a[1] in versioned_images && b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) {
+                print;
+            }
+        }
+    }
+' images-mapping-filtered.txt images-mapping-filtered.txt > images-mapping-filtered.tmp && mv -f images-mapping-filtered.tmp images-mapping-filtered.txt
+```
+
+You now have `images-mapping-filtered.txt` that should be a significantly reduced set of images that will still work for a new installation.
+
+##### ❓ How do I mirror my reduced images set ❓
+
+When `aiops bastion mirror-images` runs it creates a set of files that do the mirroring under the covers. Those files are in `.aiopsctl/mirror`.
+
+Go to `.aiopsctl/mirror` and look at `oc_image_mirror.sh`.
+
+```bash
+#!/bin/sh
+set -e
+set -o noglob
+
+# Usage
+#   ENV_VAR=... ./oc_image_mirror.sh <Path to oc binary>
+#
+# Environment variables:
+# - REGISTRY_AUTH_FILE
+#   Your registry authentication file. For Podman, this
+#   is typically `${XDG_RUNTIME_DIR}/containers/auth.json`.
+# - IMAGES_MAPPING_FILE
+#   Your images-mapping.txt to use as the source for mirroring.
+# - DRY_RUN
+#   Set to true to complete a dry-run mirror.
+#
+
+$1 image mirror \
+-f "${IMAGES_MAPPING_FILE}" \
+-a "${REGISTRY_AUTH_FILE}" \
+--insecure \
+--filter-by-os '.*' \
+--skip-multiple-scopes \
+--max-per-registry=1 \
+--dry-run="${DRY_RUN}"
+```
+
+**Tip:** If you want to speed up the mirroring, you can edit this file and change the `--max-per-registry=1` to `--max-per-registry=6`. This will run 6 threads during the mirroring process.
+
+To run the mirroring with our reduced images set `images-mapping-filtered.txt`, run the following command (use the proper path to your file if different).
+
+```bash
+# change the path to your file if different
+IMAGES_MAPPING_FILE=./.ibm-pak/data/mirror/ibm-cp-waiops/1.16.1/images-mapping-filtered-more.txt REGISTRY_AUTH_FILE=./containers/auth.json DRY_RUN=false nohup ./oc_image_mirror.sh ./oc >nohup.out2 2>&1 </dev/null &
+```
+
+While the job is calculating the images to mirror, there will be no output for up to 10 minutes, but then you should see messages showing the
+mirroring progress in `nohup.out`. A fully reduced v4.10.1 container set with 6 threads should complete in less than 30 minutes.
 
 #### Artifactory
 
@@ -134,7 +253,7 @@ For example, if your Artifactory host is `my-artifactory.company.com` and your r
 
 ##### 🖥️ Platform Requirements
 
-Ensure that you are running on **RHEL 9** from the bastion host used to run the mirroring, as the `oc` version bundled with `aiopsctl` is compatible with RHEL 9.
+Ensure that you are running on **RHEL 8** or **RHEL 9** from the bastion host used to run the mirroring, as the `oc` version bundled with `aiopsctl` is compatible with RHEL 8 & 9.
 
 You can verify your OS version with:
 
