@@ -365,40 +365,54 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><strong>WARNING:</strong> Be very careful and only attempt this if you know what are you doing. You risk not including a required container image and the below has only been tested on v4.10.1.</p>
 <p>Go to the directoy containing the <code>images-mapping.txt</code> file generated from the <code>bastion mirror-images</code> command. The following command will create a new file called <code>images-mapping-filtered.txt</code> with most of the back-level container images removed.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'NR==FNR {split($0, a, "@"); split($0, b, ":"); if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) versioned_images[a[1]]++; next} {split($0, a, "@"); split($0, b, ":"); if (!(a[1] in versioned_images &amp;&amp; b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) print}'</span> images-mapping.txt images-mapping.txt <span class="op">&gt;</span> images-mapping-filtered.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Handle the kafka containers separately with this command.</p>
+<p>There are a few different container types that need to be handled differently (redis, kafka). Run the command below to handle those.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">    NR==FNR {</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">        if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">            if (m[1] &gt; max1_version) {</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">                max2_version = max1_version; max1_version = m[1];</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">            } else if (m[1] &gt; max2_version) {</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">                max2_version = m[1];</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="st">        } else {</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, a, "@");</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="st">            if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) {</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="st">                versioned_images[a[1]]++;</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="st">        next;</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="st">    {</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="st">        if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="st">            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="st">            if (m[1] == max1_version || m[1] == max2_version) {</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="st">                print;</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="st">        } else {</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, a, "@");</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="st">            if (!(a[1] in versioned_images &amp;&amp; b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) {</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="st">                print;</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="st">'</span> images-mapping-filtered.txt images-mapping-filtered.txt <span class="op">&gt;</span> images-mapping-filtered.tmp <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> images-mapping-filtered.tmp images-mapping-filtered.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">        if ($0 ~ /ibm-redis-cp-haproxy@/) {</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">            version = b[length(b)];</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">            if (version &gt; max_redis_haproxy_version) max_redis_haproxy_version = version;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">        } else if ($0 ~ /ibm-redis-cp-7.2.7@/) {</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="st">            version = b[length(b)];</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="st">            if (version &gt; max_redis_version) max_redis_version = version;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="st">        } else if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="st">            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="st">            if (m[1] &gt; max1_kafka_version) {</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="st">                max2_kafka_version = max1_kafka_version; max1_kafka_version = m[1];</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="st">            } else if (m[1] &gt; max2_kafka_version) {</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="st">                max2_kafka_version = m[1];</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="st">        } else {</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, a, "@");</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="st">            if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) {</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="st">                versioned_images[a[1]]++;</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="st">        next;</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="st">    {</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="st">        if ($0 ~ /ibm-redis-cp-haproxy@/) {</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="st">            version = b[length(b)];</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="st">            if (version == max_redis_haproxy_version) print;</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="st">        } else if ($0 ~ /ibm-redis-cp-7.2.7@/) {</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="st">            version = b[length(b)];</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="st">            if (version == max_redis_version) print;</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="st">        } else if ($0 ~ /ibm-events-kafka-[0-9]+\.[0-9]+\.[0-9]+@/) {</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="st">            match($0, /ibm-events-kafka-([0-9]+\.[0-9]+\.[0-9]+)@/, m);</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="st">            if (m[1] == max1_kafka_version || m[1] == max2_kafka_version) print;</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="st">        } else {</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, a, "@");</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="st">            if (!(a[1] in versioned_images &amp;&amp; b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) {</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="st">                print;</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="st">'</span> images-mapping-filtered.txt images-mapping-filtered.txt <span class="op">&gt;</span> images-mapping-filtered.tmp <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> images-mapping-filtered.tmp images-mapping-filtered.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>You now have <code>images-mapping-filtered.txt</code> that should be a significantly reduced set of images that will still work for a new installation.</p>
 </section>
 <section id="how-do-i-mirror-my-reduced-images-set" class="level5">
