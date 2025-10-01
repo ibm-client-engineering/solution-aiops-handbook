@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.33">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -69,14 +69,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../../images/bee.png" rel="icon" type="image/png">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ea385d0e468b0dd5ea5bf0780b1290d9.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-b17af9df60aec4efad1097f51a75be2e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-7739a7c88020ee5985c041f1390fa554.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -116,7 +117,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../../images/IBMlogo.png" alt="" class="navbar-logo">
+    <img src="../../images/IBMlogo.png" alt="" class="navbar-logo light-content">
+    <img src="../../images/IBMlogo.png" alt="" class="navbar-logo dark-content">
     </a>
     <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">AIOps Handbook</span>
@@ -171,6 +173,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="../../index.html" class="sidebar-logo-link">
+      </a>
+      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -292,7 +298,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="non-root-users">Non-root Users</h3>
 <p>The installation of AIOps on Linux requires root (or <code>sudo</code>) and the underlying components run as root on the nodes. However, you can configure your nodes such that a non-root user can do most types of administrative tasks after the installation.</p>
 <p>The commands below can be run as root after <code>cluster node up</code> is successful on the control plane (k3s server) nodes to configure a group called <code>k3sadmin</code> that will allow a non-root user called <code>clouduser</code> to run administrative commands.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">groupadd</span> k3sadmin</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">groupadd</span> k3sadmin</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">usermod</span> <span class="at">-aG</span> k3sadmin clouduser</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">chown</span> root:k3sadmin /usr/local/bin/k3s</span>
@@ -318,7 +324,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># for oc</span></span>
 <span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> /home/clouduser/.kube</span>
 <span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> /etc/rancher/k3s/k3s.yaml /home/clouduser/.kube/config</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">chown</span> <span class="at">-R</span> clouduser:clouduser /home/clouduser/.kube</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">chown</span> <span class="at">-R</span> clouduser:clouduser /home/clouduser/.kube</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>After executing these commands, <code>clouduser</code> will be able to run <code>kubectl</code>, <code>crictl</code>, <code>ctr</code>, <code>aiopsctl</code>, and <code>oc</code> (if online install is used).</p>
 <section id="where-is-oc-in-my-offline-install" class="level4">
 <h4 class="anchored" data-anchor-id="where-is-oc-in-my-offline-install">❓ Where is <code>oc</code> in my offline install?</h4>
@@ -335,25 +341,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="where-do-i-find-the-list-of-container-images" class="level5">
 <h5 class="anchored" data-anchor-id="where-do-i-find-the-list-of-container-images">❓ Where do I find the list of container images ❓</h5>
 <p>The container images for Cloud Pak for AIOps can vary depending on release. There is no way to have the <code>aiopsctl</code> command generate list without also attempting to mirror the images. Here is a hack that will kill the process after it generates the proper manifest file but before the mirroring starts (change the <code>--registry</code> parameter value to match your environment):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run aiopsctl bastion login commands for both icr.io and the target registry first</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run aiopsctl bastion login commands for both cp.icr.io and the target registry first</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aiopsctl</span> bastion mirror-images <span class="at">--registry</span> artifactory.gym.lan:8443/docker-local <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">|</span> <span class="fu">tee</span> <span class="op">&gt;(</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="bu">read</span> <span class="va">line</span><span class="kw">;</span> <span class="cf">do</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$line</span><span class="st">"</span> <span class="ot">==</span> <span class="pp">*</span><span class="st">'Mirroring images to registry'</span><span class="pp">*</span> <span class="kw">]];</span> <span class="cf">then</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>            <span class="bu">echo</span> <span class="st">"String found. Killing process..."</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>            <span class="ex">pkill</span> <span class="at">-P</span> <span class="va">$$</span> aiopsctl</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            <span class="bu">exit</span> 0</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">fi</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">done</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>            <span class="fu">sleep</span> 5 <span class="co"># time for oc to install</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            <span class="ex">pkill</span> <span class="at">-P</span> <span class="va">$$</span> aiopsctl</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>            <span class="bu">exit</span> 0</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">fi</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">done</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This will generate a file called <code>images-mapping.txt</code> under <code>~/.aiopsctl</code>. The directory will differ depending on the release, but for v4.10.1 the location is <code>~/.aiopsctl/mirror/.ibm-pak/data/mirror/ibm-cp-waiops/1.16.1</code></p>
 <p>Example of <code>images-mapping.txt</code> (only first 4 lines shown):</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode txt code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/ace-server-prod@sha256:2f9e903bd2cf53ba0878e982ac0f81d956200ffe70a9a57084c2b31bf9134311=artifactory.gym.lan:8443/docker-local/cp/appc/ace-server-prod:13.0.2.2-r2-20250315-121329</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode txt code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/ace-server-prod@sha256:2f9e903bd2cf53ba0878e982ac0f81d956200ffe70a9a57084c2b31bf9134311=artifactory.gym.lan:8443/docker-local/cp/appc/ace-server-prod:13.0.2.2-r2-20250315-121329</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/acecc-content-server-prod@sha256:4a558be37f530acc1c2395187bbe6d896a2f8dca3c2c9977eb66b7e984805abe=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-content-server-prod:13.0.2.2-r2-20250318-034910</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/acecc-couchdb3-prod@sha256:c18d850494ba2ee8a90859430e4cd7ea2e6c342eea750afc816f450520dd42c8=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-couchdb3-prod:13.0.2.2-r2-20250318-020015</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/acecc-dashboard-prod@sha256:ab27d8031bb8ec87a3e465c4e172d9c57cd0b415db78d8305e45f74820949d58=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-dashboard-prod:13.0.2.2-r2-20250325-140612</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>cp.icr.io/cp/appc/acecc-dashboard-prod@sha256:ab27d8031bb8ec87a3e465c4e172d9c57cd0b415db78d8305e45f74820949d58=artifactory.gym.lan:8443/docker-local/cp/appc/acecc-dashboard-prod:13.0.2.2-r2-20250325-140612</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For each line, the section before <code>=</code> is the source container image from IBM container registry.</p>
 <p>To list only the source images from the <code>images-mapping.txt</code> file, use the following command:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span><span class="op">=</span> <span class="st">'{print $1}'</span> images-mapping.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span><span class="op">=</span> <span class="st">'{print $1}'</span> images-mapping.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="do-i-really-need-all-of-these-container-images" class="level5">
 <h5 class="anchored" data-anchor-id="do-i-really-need-all-of-these-container-images">❓ Do I really need <em>all</em> of these container images ❓</h5>
@@ -364,9 +371,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h5 class="anchored" data-anchor-id="how-do-i-reduce-the-image-manifest">❓ How do I reduce the image manifest ❓</h5>
 <p><strong>WARNING:</strong> Be very careful and only attempt this if you know what are you doing. You risk not including a required container image and the below has only been tested on v4.10.1.</p>
 <p>Go to the directoy containing the <code>images-mapping.txt</code> file generated from the <code>bastion mirror-images</code> command. The following command will create a new file called <code>images-mapping-filtered.txt</code> with most of the back-level container images removed.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'NR==FNR {split($0, a, "@"); split($0, b, ":"); if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) versioned_images[a[1]]++; next} {split($0, a, "@"); split($0, b, ":"); if (!(a[1] in versioned_images &amp;&amp; b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) print}'</span> images-mapping.txt images-mapping.txt <span class="op">&gt;</span> images-mapping-filtered.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'NR==FNR {split($0, a, "@"); split($0, b, ":"); if (b[length(b)] ~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/) versioned_images[a[1]]++; next} {split($0, a, "@"); split($0, b, ":"); if (!(a[1] in versioned_images &amp;&amp; b[length(b)] !~ /^v?[0-9]+\.[0-9]+\.[0-9]+.*$/)) print}'</span> images-mapping.txt images-mapping.txt <span class="op">&gt;</span> images-mapping-filtered.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>There are a few different container types that need to be handled differently (redis, kafka). Run the command below to handle those.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">'</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">    NR==FNR {</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">        if ($0 ~ /ibm-redis-cp-haproxy@/) {</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">            split($0, b, ":");</span></span>
@@ -412,14 +419,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="st">            }</span></span>
 <span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
 <span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="st">'</span> images-mapping-filtered.txt images-mapping-filtered.txt <span class="op">&gt;</span> images-mapping-filtered.tmp <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> images-mapping-filtered.tmp images-mapping-filtered.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="st">'</span> images-mapping-filtered.txt images-mapping-filtered.txt <span class="op">&gt;</span> images-mapping-filtered.tmp <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> <span class="at">-f</span> images-mapping-filtered.tmp images-mapping-filtered.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>You now have <code>images-mapping-filtered.txt</code> that should be a significantly reduced set of images that will still work for a new installation.</p>
 </section>
 <section id="how-do-i-mirror-my-reduced-images-set" class="level5">
 <h5 class="anchored" data-anchor-id="how-do-i-mirror-my-reduced-images-set">❓ How do I mirror my reduced images set ❓</h5>
 <p>When <code>aiops bastion mirror-images</code> runs it creates a set of files that do the mirroring under the covers. Those files are in <code>.aiopsctl/mirror</code>.</p>
 <p>Go to <code>.aiopsctl/mirror</code> and look at <code>oc_image_mirror.sh</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-o</span> noglob</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -443,11 +450,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>--filter-by-os <span class="st">'.*'</span> <span class="dt">\</span></span>
 <span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>--skip-multiple-scopes <span class="dt">\</span></span>
 <span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>--max-per-registry=1 <span class="dt">\</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>--dry-run=<span class="st">"</span><span class="va">${DRY_RUN}</span><span class="st">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>--dry-run=<span class="st">"</span><span class="va">${DRY_RUN}</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Tip:</strong> If you want to speed up the mirroring, you can edit this file and change the <code>--max-per-registry=1</code> to <code>--max-per-registry=6</code>. This will run 6 threads during the mirroring process.</p>
 <p>To run the mirroring with our reduced images set <code>images-mapping-filtered.txt</code>, run the following command (use the proper path to your file if different).</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># change the path to your file if different</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="va">IMAGES_MAPPING_FILE</span><span class="op">=</span>./.ibm-pak/data/mirror/ibm-cp-waiops/1.16.1/images-mapping-filtered.txt <span class="va">REGISTRY_AUTH_FILE</span><span class="op">=</span>./containers/auth.json <span class="va">DRY_RUN</span><span class="op">=</span>false <span class="fu">nohup</span> ./oc_image_mirror.sh ./oc <span class="op">&gt;</span>nohup.out <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="op">&lt;</span>/dev/null <span class="kw">&amp;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># change the path to your file if different</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="va">IMAGES_MAPPING_FILE</span><span class="op">=</span>./.ibm-pak/data/mirror/ibm-cp-waiops/1.16.1/images-mapping-filtered.txt <span class="va">REGISTRY_AUTH_FILE</span><span class="op">=</span>./containers/auth.json <span class="va">DRY_RUN</span><span class="op">=</span>false <span class="fu">nohup</span> ./oc_image_mirror.sh ./oc <span class="op">&gt;</span>nohup.out <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="op">&lt;</span>/dev/null <span class="kw">&amp;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>While the job is calculating the images to mirror, there will be no output for up to 10 minutes, but then you should see messages showing the mirroring progress in <code>nohup.out</code>. A fully reduced v4.10.1 container set with 6 threads should complete in less than 30 minutes.</p>
 </section>
 </section>
@@ -466,7 +473,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="docker-v2-api-validation" class="level5">
 <h5 class="anchored" data-anchor-id="docker-v2-api-validation">🧪 Docker V2 API validation</h5>
 <p>Test if the Docker v2 API is enabled by running:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span>:<span class="op">&lt;</span>password<span class="op">&gt;</span> https://<span class="op">&lt;</span>your-artifactory-domain<span class="op">&gt;</span>/artifactory/<span class="op">&lt;</span>repo-name<span class="op">&gt;</span>/v2/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span>:<span class="op">&lt;</span>password<span class="op">&gt;</span> https://<span class="op">&lt;</span>your-artifactory-domain<span class="op">&gt;</span>/artifactory/<span class="op">&lt;</span>repo-name<span class="op">&gt;</span>/v2/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
 <li>If it returns a <code>200 OK</code> or <code>401 Unauthorized</code>, the v2 API is enabled.</li>
 <li>If it returns <code>404 Not Found</code>, the repo may not support Docker v2.</li>
@@ -488,9 +495,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h5 class="anchored" data-anchor-id="platform-requirements">🖥️ Platform Requirements</h5>
 <p>Ensure that you are running on <strong>RHEL 8</strong> or <strong>RHEL 9</strong> from the bastion host used to run the mirroring, as the <code>oc</code> version bundled with <code>aiopsctl</code> is compatible with RHEL 8 &amp; 9.</p>
 <p>You can verify your OS version with:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /etc/redhat-release</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /etc/redhat-release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>And check your oc version with:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> version</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">oc</span> version</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -549,13 +556,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
