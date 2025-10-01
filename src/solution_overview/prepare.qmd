@@ -75,11 +75,12 @@ attempting to mirror the images. Here is a hack that will kill the process after
 starts (change the `--registry` parameter value to match your environment):
 
 ```bash
-# run aiopsctl bastion login commands for both icr.io and the target registry first
+# run aiopsctl bastion login commands for both cp.icr.io and the target registry first
 aiopsctl bastion mirror-images --registry artifactory.gym.lan:8443/docker-local 2>&1 | tee >(
     while read line; do
         if [[ "$line" == *'Mirroring images to registry'* ]]; then
             echo "String found. Killing process..."
+            sleep 5 # time for oc to install
             pkill -P $$ aiopsctl
             exit 0
         fi
@@ -177,7 +178,7 @@ awk '
             }
         }
     }
-' images-mapping-filtered.txt images-mapping-filtered.txt > images-mapping-filtered.tmp && mv images-mapping-filtered.tmp images-mapping-filtered.txt
+' images-mapping-filtered.txt images-mapping-filtered.txt > images-mapping-filtered.tmp && mv -f images-mapping-filtered.tmp images-mapping-filtered.txt
 ```
 
 You now have `images-mapping-filtered.txt` that should be a significantly reduced set of images that will still work for a new installation.
