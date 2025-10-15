@@ -1,0 +1,258 @@
+---
+title: "AIOps on Linux Administration"
+format: html
+---
+
+# Node Maintenance: Safe Rolling Reboot and Patching
+
+This section outlines the procedure for safely performing maintenance (e.g., operating system patching, security updates, or reboots) on K3s cluster nodes that are part of AIOps on Linux. This is a **rolling process**, meaning only **one node is taken offline at a time** to maintain service continuity.
+
+## Prerequisites
+
+1.  **Access:** SSH access to the node(s) to be rebooted.
+2.  **Permissions:** Kubernetes configuration file (`~/.kube/config` or root access) for running `kubectl` commands.
+3.  **Script:** The `k3s-capacity-check.sh` script to analyze resource availability.
+
+-----
+
+## Step 1: Verify Cluster Capacity Before Starting
+
+Before starting any maintenance, you must ensure the remaining nodes have enough guaranteed resources (Memory Requests) to absorb the workload of the node you plan to drain.
+
+### Download and Install the Script
+
+You have two options to obtain the script: download it directly from the repository or copy/paste it via the console.
+
+#### Option A: Direct Download
+
+1.  **Download:** Save the script to a server/control-plane node:
+    [k3s-capacity-check](./scripts/k3s-capacity-check.sh)
+
+2.  **Make Executable:** Set the execution permission on the script file:
+
+    ```bash
+    chmod +x k3s-capacity-check.sh
+    ```
+
+#### Option B: Copy/Paste via Console
+
+Click to expand the section below to view the full script logic. Copy and paste all the contents into a new file named `k3s-capacity-check` on your target system, then follow step 2 above to make it executable.
+
+<details>
+<summary>View Script Source: <code>k3s-capacity-check.sh</code></summary>
+
+```bash
+#!/bin/bash
+
+# Check if the script is run as root (UID 0)
+if [[ $UID -eq 0 ]]; then
+    # Running as root: use the default kubectl command, assuming necessary environment/configs are set for root.
+    KUBECTL_CMD="kubectl"
+    echo "Running as root. Using standard 'kubectl'."
+else
+    # Running as non-root: explicitly specify the kubeconfig file.
+    # We use $HOME for the home directory of the current user.
+    KUBECTL_CMD="kubectl --kubeconfig $HOME/.kube/config"
+    echo "Running as non-root. Using '${KUBECTL_CMD}'."
+fi
+
+# Resource to check for the critical bottleneck (Memory is typically the most critical)
+RESOURCE="memory"
+# The scaling factor for Ki to Mi (1024)
+SCALE_FACTOR=1024
+
+# --- Helper Functions (Using AWK for Division) ---
+
+# Function to safely convert any unit (Ki/Mi/Raw Bytes) to MiB (Megabytes)
+# $1: Value string from kubectl (e.g., "26874661376", "29700Mi", "38126949Ki")
+convert_to_mib() {
+    local val=$1
+    local unit=$(echo "$val" | grep -oE '[a-zA-Z]+$')
+    local num=$(echo "$val" | grep -oE '^[0-9]+')
+
+    if [[ -z "$num" ]]; then
+        echo 0
+        return
+    fi
+
+    # Use awk to handle floating point conversion and rounding
+    if [[ "$unit" == "Ki" ]]; then
+        # Convert Ki to Mi: Ki / 1024
+        echo "$num" | awk '{printf "%.0f", $1 / 1024}'
+    elif [[ "$unit" == "Mi" ]]; then
+        # Value is already Mi, just echo it
+        echo "$num"
+    else
+        # Assume raw bytes if no unit is found, convert Bytes to Mi: Bytes / (1024 * 1024)
+        # Note: We must be cautious with very large byte numbers in awk on some systems.
+        echo "$num" | awk '{printf "%.0f", $1 / 1048576}'
+    fi
+}
+
+# --- Data Collection and Calculation ---
+
+# Get a list of all schedulable worker and server nodes
+NODES=$($KUBECTL_CMD get nodes --no-headers -o custom-columns=NAME:.metadata.name)
+NUM_NODES=$(echo "$NODES" | wc -l)
+
+TOTAL_CAPACITY_MI=0
+TOTAL_REQUESTS_MI=0
+MAX_NODE_REQUESTS_MI=0
+BUSIEST_NODE=""
+
+echo "--- Kubernetes Cluster Capacity Analysis ---"
+echo "Using command: ${KUBECTL_CMD}"
+echo "Analyzing ${NUM_NODES} nodes. Critical Resource: ${RESOURCE^}."
+echo "------------------------------------------------"
+
+for NODE in $NODES; do
+    # 1. Get Node Capacity (Allocatable)
+    # Extracts the Allocatable memory value (e.g., "34000Mi" or "35000000Ki")
+    CAPACITY_VAL=$($KUBECTL_CMD describe node "$NODE" | awk "/^Allocatable:/{flag=1; next} /${RESOURCE}/ && flag{print \$2; exit}" | grep -oE '^[0-9]+(Mi|Ki)?$')
+
+    # Convert to MiB using the helper function
+    CAPACITY_MI=$(convert_to_mib "$CAPACITY_VAL")
+
+    # 2. Get Node Requests
+    # Extracts the Requested memory value (e.g., "26874661376", "29700Mi")
+    # This AWK command is now carefully structured to grab the *second* field for memory in the "Allocated resources" block
+    REQUESTS_VAL=$($KUBECTL_CMD describe node "$NODE" | awk '/Allocated resources:/,/Events:/{if ($1 == "memory") print $2; if ($1 == "cpu") print $2}' | grep -oE '^[0-9]+(Mi|Ki)?$')
+
+    # Convert to MiB using the helper function
+    REQUESTS_MI=$(convert_to_mib "$REQUESTS_VAL")
+
+    # Handle cases where request data is missing or failed conversion
+    if [ -z "$CAPACITY_MI" ] || [ -z "$REQUESTS_MI" ]; then
+        echo "Warning: Skipped $NODE due to missing data or conversion error." >&2
+        continue
+    fi
+
+    # 3. Calculate Totals and Busiest Node (Bash Integer Math)
+    TOTAL_CAPACITY_MI=$((TOTAL_CAPACITY_MI + CAPACITY_MI))
+    TOTAL_REQUESTS_MI=$((TOTAL_REQUESTS_MI + REQUESTS_MI))
+
+    if [ "$REQUESTS_MI" -gt "$MAX_NODE_REQUESTS_MI" ]; then
+        MAX_NODE_REQUESTS_MI="$REQUESTS_MI"
+        BUSIEST_NODE="$NODE"
+    fi
+done
+
+# --- Final Calculations and Summary Output (Bash Integer Math) ---
+FREE_CAPACITY_MI=$((TOTAL_CAPACITY_MI - TOTAL_REQUESTS_MI))
+NET_CAPACITY_AFTER_DRAIN=$((FREE_CAPACITY_MI - MAX_NODE_REQUESTS_MI))
+
+echo "------------------------------------------------"
+echo "--- Cluster Totals (for ${RESOURCE^}) ---"
+echo "Total Cluster Allocatable: $((TOTAL_CAPACITY_MI / 1024)) Gi"
+echo "Total Cluster Requests:    $((TOTAL_REQUESTS_MI / 1024)) Gi"
+echo "Total Cluster Free Capacity: $((FREE_CAPACITY_MI / 1024)) Gi"
+echo "------------------------------------------------"
+echo "--- Maintenance Prediction ---"
+
+if [ "$NET_CAPACITY_AFTER_DRAIN" -ge 0 ]; then
+    echo "✅ PREDICTION: SUCCESSFUL"
+    echo "The cluster has enough guaranteed capacity (Memory) to absorb the busiest node's workload."
+    echo "Remaining Free Capacity after draining busiest node: $((NET_CAPACITY_AFTER_DRAIN / 1024)) Gi"
+else
+    echo "🚨 PREDICTION: FAILURE RISK"
+    echo "The cluster does NOT have enough guaranteed free capacity (Memory) to absorb the busiest node's workload."
+    # Use integer math for the negative result and division
+    CAPACITY_SHORTFALL=$((-NET_CAPACITY_AFTER_DRAIN))
+    echo "Capacity Shortfall: $((CAPACITY_SHORTFALL / 1024)) Gi"
+fi
+
+echo "------------------------------------------------"
+echo "HIGHEST RISK NODE (If drained): $BUSIEST_NODE"
+echo "Load to be re-scheduled: $((MAX_NODE_REQUESTS_MI / 1024)) Gi"
+echo ""
+```
+
+</details>
+
+### Run the Analysis
+
+Execute the script to determine if you have enough capacity for a safe drain:
+
+```bash
+./k3s-capacity-check.sh
+```
+
+3.  **Analyze the Prediction:**
+      * **✅ SUCCESSFUL:** The `Remaining Free Capacity` is positive. Proceed to Step 2.
+      * **🚨 FAILURE RISK:** The script reports a `Capacity Shortfall`. **DO NOT PROCEED.** Scale up your cluster until the script predicts success.
+
+-----
+
+## Step 2: Prepare the Node for Maintenance (Cordon and Drain)
+
+This step removes the node's workload and prevents new Pods from being scheduled to it.
+
+1.  **Identify the Target Node:** Choose the safest node first (the one with the lowest "Load to be re-scheduled" as reported by the script) or the first node in your rotation.
+
+2.  **Cordon and Drain the Node:** Run the `kubectl drain` command. This automatically marks the node as `Unschedulable` (**Cordon**) and safely evicts all running Pods.
+
+    ```bash
+    # Replace <node-name> with the actual node name, e.g., aiops-k3s-agent-0.gym.lan
+    kubectl drain <node-name> \
+      --ignore-daemonsets \
+      --delete-emptydir-data
+    ```
+
+    | Flag | Purpose |
+    | :--- | :--- |
+    | `--ignore-daemonsets` | Ensures critical cluster services (managed by DaemonSets) are not evicted. |
+    | `--delete-emptydir-data` | **Required** to evict Pods using `EmptyDir` volumes (which are temporary and local). |
+
+3.  **Verify the Drain:** Confirm the node status and that no user Pods remain.
+
+    ```bash
+    kubectl get nodes
+    # Status should show "<node-name> Ready,SchedulingDisabled"
+    ```
+
+-----
+
+## Step 3: Perform Maintenance (Patch and Reboot)
+
+Once the node is drained, it is safe to perform the necessary operating system work.
+
+1.  **SSH and Update:** SSH into the drained node and perform OS patching/updates.
+
+    ```bash
+    ssh <node-name>
+    # e.g., sudo apt update && sudo apt upgrade -y
+    ```
+
+2.  **Reboot:** Reboot the server to finalize updates.
+
+    ```bash
+    sudo reboot
+    ```
+
+3.  **Wait for Ready State:** Wait until the node reboots and its status changes back to `Ready` (but still `SchedulingDisabled`). This may take a few minutes as K3s/kubelet starts up.
+
+    ```bash
+    # Run this periodically from another node
+    kubectl get nodes
+    ```
+
+-----
+
+## Step 4: Complete the Cycle (Uncordon and Verify)
+
+1.  **Uncordon the Node:** Mark the node as `Schedulable` so the Kubernetes scheduler can once again place Pods onto it.
+
+    ```bash
+    kubectl uncordon <node-name>
+    ```
+
+2.  **Verify Pod Rescheduling:** Check that the Pods evicted during the drain process have successfully rescheduled themselves across the cluster, including back onto the newly available node.
+
+3.  **Verify Cluster Health:** Check the health of the entire cluster before moving on to the next node.
+
+    ```bash
+    kubectl get pods -A | grep -v 'Running'
+    # Ensure no Pods are stuck in a Pending or CrashLoopBackOff state.
+    ```
+
+**Repeat Steps 2 through 4** for the next node in the maintenance cycle. Always re-verify capacity if there have been significant workload changes.
