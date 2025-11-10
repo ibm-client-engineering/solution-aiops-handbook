@@ -42,6 +42,8 @@ website:
             href: src/solution_overview/prepare.qmd
           - text: Deploy 
             href: src/solution_overview/deploy.qmd
+          - text: Configure 
+            href: src/solution_overview/configuration.qmd
           - text: Administration
             href: src/solution_overview/administration.qmd
         # - section: Implementation Methodology
