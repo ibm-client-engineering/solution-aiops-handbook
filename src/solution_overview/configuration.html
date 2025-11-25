@@ -105,6 +105,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="../../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
@@ -228,6 +231,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#configuring-ldaps-trust-in-aiops" id="toc-configuring-ldaps-trust-in-aiops" class="nav-link active" data-scroll-target="#configuring-ldaps-trust-in-aiops">Configuring LDAPS Trust in AIOps</a>
   <ul class="collapse">
+  <li><a href="#architecture-patterns" id="toc-architecture-patterns" class="nav-link" data-scroll-target="#architecture-patterns">Architecture Patterns</a>
+  <ul class="collapse">
+  <li><a href="#option-1-the-broker-approach" id="toc-option-1-the-broker-approach" class="nav-link" data-scroll-target="#option-1-the-broker-approach">Option 1: The “Broker” Approach</a></li>
+  <li><a href="#option-2-the-direct-dependency-approach" id="toc-option-2-the-direct-dependency-approach" class="nav-link" data-scroll-target="#option-2-the-direct-dependency-approach">Option 2: The “Direct Dependency” Approach</a></li>
+  </ul></li>
   <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link" data-scroll-target="#prerequisites">Prerequisites</a></li>
   <li><a href="#procedure" id="toc-procedure" class="nav-link" data-scroll-target="#procedure">Procedure</a>
   <ul class="collapse">
@@ -281,7 +289,130 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="configuring-ldaps-trust-in-aiops" class="level1">
 <h1>Configuring LDAPS Trust in AIOps</h1>
 <p>To enable a secure connection (LDAPS) between AIOps and an external LDAP server, you must import the LDAP server’s Certificate Authority (CA) certificate into the platform’s truststore.</p>
-<p>Without this step, AIOps will reject the connection with a “Handshake Failed” or “Unknown CA” error.</p>
+<section id="architecture-patterns" class="level2">
+<h2 class="anchored" data-anchor-id="architecture-patterns">Architecture Patterns</h2>
+<p>Before applying the configuration, it is important to understand <em>why</em> this certificate is needed. There are two common patterns for integrating LDAP with AIOps using SAML.</p>
+<section id="option-1-the-broker-approach" class="level3">
+<h3 class="anchored" data-anchor-id="option-1-the-broker-approach">Option 1: The “Broker” Approach</h3>
+<p>In this model, the IdP handles all LDAP communication. AIOps learns about user and group data through SAML login attempts.</p>
+<ul>
+<li><strong>Certificate Requirement:</strong> The LDAP CA is in the IdP connection to LDAP, not AIOps.</li>
+<li><strong>AIOps Config:</strong> No LDAP connection required in AIOps.</li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    User((User))
+    AIOps["AIOps Platform"]
+    IdP["IdP"]
+    LDAP[("LDAP Server")]
+
+    subgraph "Authorization Flow"
+    User --&gt;|"1. Access UI"| AIOps
+    AIOps -.-&gt;|"2. Redirect for Auth"| IdP
+    IdP &lt;--&gt;|"3. Verify Creds and Fetch Groups"| LDAP
+    IdP == "4. SAML Token (User + Groups)" ==&gt; AIOps
+    end
+
+    style AIOps fill:#14164a,stroke:#333,stroke-width:2px
+    style LDAP fill:#eee,stroke:#333,stroke-width:2px
+    
+    linkStyle 3 stroke-width:4px,fill:none,stroke:green;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Pros</th>
+<th style="text-align: left;">Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Simpler Config:</strong> AIOps needs no knowledge of LDAP topology.</td>
+<td style="text-align: left;"><strong>Role Management:</strong> AIOps must first wait to be told about a group from a failed SAML login, then that group can be assigned a role.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Single Trust Store:</strong> Only the IdP needs the LDAP certificates.</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="option-2-the-direct-dependency-approach" class="level3">
+<h3 class="anchored" data-anchor-id="option-2-the-direct-dependency-approach">Option 2: The “Direct Dependency” Approach</h3>
+<p>In this model, AIOps uses SAML for authentication but connects directly to LDAP to search for user groups and details. <strong>The instructions in this document apply to this scenario.</strong></p>
+<ul>
+<li><strong>Certificate Requirement:</strong> You must import the LDAP CA into <strong>AIOps</strong>.</li>
+<li><strong>AIOps Config:</strong> Requires an LDAP connection profile in AIOps.</li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    User((User))
+    AIOps["AIOps Platform"]
+    IdP["IdP"]
+    LDAP[("LDAP Server")]
+
+    subgraph "Authorization Flow"
+    User --&gt;|"1. Access UI"| AIOps
+    AIOps -.-&gt;|"2. Redirect for Auth"| IdP
+    IdP &lt;--&gt;|"3. Verify Creds Only"| LDAP
+    IdP == "4. SAML Token (User Only)" ==&gt; AIOps
+    AIOps &lt;--&gt;|"5. Direct Query: Get User Groups"| LDAP
+    end
+
+    style AIOps fill:#f9f,stroke:#333,stroke-width:2px
+    style LDAP fill:#eee,stroke:#333,stroke-width:2px
+    
+    linkStyle 3 stroke-width:4px,fill:none,stroke:green;
+    linkStyle 4 stroke-width:4px,fill:none,stroke:red;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Pros</th>
+<th style="text-align: left;">Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Role Management:</strong> You can manage all the roles of LDAP users and groups inside the AIOps console immediately.</td>
+<td style="text-align: left;"><strong>Complexity:</strong> Requires configuring LDAP in two places (IdP and AIOps).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><strong>Network:</strong> AIOps requires direct firewall access to the LDAP server.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
 <section id="prerequisites" class="level2">
 <h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
 <ul>
@@ -380,6 +511,7 @@ Tip
 </tr>
 </tbody>
 </table>
+<hr>
 </section>
 </section>
 </section>
