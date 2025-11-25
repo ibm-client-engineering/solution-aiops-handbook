@@ -7,7 +7,77 @@ format: html
 
 To enable a secure connection (LDAPS) between AIOps and an external LDAP server, you must import the LDAP server's Certificate Authority (CA) certificate into the platform's truststore.
 
-Without this step, AIOps will reject the connection with a "Handshake Failed" or "Unknown CA" error.
+## Architecture Patterns
+
+Before applying the configuration, it is important to understand *why* this certificate is needed. There are two common patterns for integrating LDAP with AIOps using SAML.
+
+### Option 1: The "Broker" Approach
+In this model, the IdP handles all LDAP communication. AIOps learns about user and group data through SAML login attempts.
+
+*   **Certificate Requirement:** The LDAP CA is in the IdP connection to LDAP, not AIOps.
+*   **AIOps Config:** No LDAP connection required in AIOps.
+
+```{mermaid}
+flowchart TD
+    User((User))
+    AIOps["AIOps Platform"]
+    IdP["IdP"]
+    LDAP[("LDAP Server")]
+
+    subgraph "Authorization Flow"
+    User -->|"1. Access UI"| AIOps
+    AIOps -.->|"2. Redirect for Auth"| IdP
+    IdP <-->|"3. Verify Creds and Fetch Groups"| LDAP
+    IdP == "4. SAML Token (User + Groups)" ==> AIOps
+    end
+
+    style AIOps fill:#14164a,stroke:#333,stroke-width:2px
+    style LDAP fill:#eee,stroke:#333,stroke-width:2px
+    
+    linkStyle 3 stroke-width:4px,fill:none,stroke:green;
+```
+
+| Pros | Cons |
+| :--- | :--- |
+| **Simpler Config:** AIOps needs no knowledge of LDAP topology. | **Role Management:** AIOps must first wait to be told about a group from a failed SAML login, then that group can be assigned a role. |
+| **Single Trust Store:** Only the IdP needs the LDAP certificates. | |
+
+***
+
+### Option 2: The "Direct Dependency" Approach
+In this model, AIOps uses SAML for authentication but connects directly to LDAP to search for user groups and details. **The instructions in this document apply to this scenario.**
+
+*   **Certificate Requirement:** You must import the LDAP CA into **AIOps**.
+*   **AIOps Config:** Requires an LDAP connection profile in AIOps.
+
+```{mermaid}
+flowchart TD
+    User((User))
+    AIOps["AIOps Platform"]
+    IdP["IdP"]
+    LDAP[("LDAP Server")]
+
+    subgraph "Authorization Flow"
+    User -->|"1. Access UI"| AIOps
+    AIOps -.->|"2. Redirect for Auth"| IdP
+    IdP <-->|"3. Verify Creds Only"| LDAP
+    IdP == "4. SAML Token (User Only)" ==> AIOps
+    AIOps <-->|"5. Direct Query: Get User Groups"| LDAP
+    end
+
+    style AIOps fill:#f9f,stroke:#333,stroke-width:2px
+    style LDAP fill:#eee,stroke:#333,stroke-width:2px
+    
+    linkStyle 3 stroke-width:4px,fill:none,stroke:green;
+    linkStyle 4 stroke-width:4px,fill:none,stroke:red;
+```
+
+| Pros | Cons |
+| :--- | :--- |
+| **Role Management:** You can manage all the roles of LDAP users and groups inside the AIOps console immediately. | **Complexity:** Requires configuring LDAP in two places (IdP and AIOps). |
+| | **Network:** AIOps requires direct firewall access to the LDAP server. |
+
+---
 
 ## Prerequisites
 
@@ -95,6 +165,8 @@ kubectl logs -n aiops -l component=platform-auth-service -f
 | `ETIMEDOUT` | **Firewall / Network:** The pod cannot reach the LDAP IP on port 636. |
 | `Handshake failed` | **Certificate:** The CA cert in the secret is wrong or expired. |
 | `PKIX path building failed` | **Trust:** The server provided a cert that the secret's CA does not sign. |
+
+---
 
 # Self Monitoring
 
