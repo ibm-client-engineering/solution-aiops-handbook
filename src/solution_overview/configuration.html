@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.8.26">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -74,7 +74,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../site_libs/bootstrap/bootstrap-7739a7c88020ee5985c041f1390fa554.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -173,10 +173,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
-    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="../../index.html" class="sidebar-logo-link">
-      </a>
-      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -230,7 +226,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#self-monitoring" id="toc-self-monitoring" class="nav-link active" data-scroll-target="#self-monitoring">Self Monitoring</a>
+  <li><a href="#configuring-ldaps-trust-in-aiops" id="toc-configuring-ldaps-trust-in-aiops" class="nav-link active" data-scroll-target="#configuring-ldaps-trust-in-aiops">Configuring LDAPS Trust in AIOps</a>
+  <ul class="collapse">
+  <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link" data-scroll-target="#prerequisites">Prerequisites</a></li>
+  <li><a href="#procedure" id="toc-procedure" class="nav-link" data-scroll-target="#procedure">Procedure</a>
+  <ul class="collapse">
+  <li><a href="#encode-the-certificate" id="toc-encode-the-certificate" class="nav-link" data-scroll-target="#encode-the-certificate">1. Encode the Certificate</a></li>
+  <li><a href="#edit-the-aiops-trust-secret" id="toc-edit-the-aiops-trust-secret" class="nav-link" data-scroll-target="#edit-the-aiops-trust-secret">2. Edit the AIOps Trust Secret</a></li>
+  <li><a href="#restart-the-authentication-service" id="toc-restart-the-authentication-service" class="nav-link" data-scroll-target="#restart-the-authentication-service">3. Restart the Authentication Service</a></li>
+  <li><a href="#verify-connectivity" id="toc-verify-connectivity" class="nav-link" data-scroll-target="#verify-connectivity">4. Verify Connectivity</a></li>
+  <li><a href="#troubleshooting-common-errors" id="toc-troubleshooting-common-errors" class="nav-link" data-scroll-target="#troubleshooting-common-errors">Troubleshooting Common Errors</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#self-monitoring" id="toc-self-monitoring" class="nav-link" data-scroll-target="#self-monitoring">Self Monitoring</a>
   <ul class="collapse">
   <li><a href="#setting-up-a-promethues-alertmanager-webhook-in-aiops" id="toc-setting-up-a-promethues-alertmanager-webhook-in-aiops" class="nav-link" data-scroll-target="#setting-up-a-promethues-alertmanager-webhook-in-aiops">Setting Up a Promethues AlertManager Webhook in AIOps</a>
   <ul class="collapse">
@@ -270,6 +278,111 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="configuring-ldaps-trust-in-aiops" class="level1">
+<h1>Configuring LDAPS Trust in AIOps</h1>
+<p>To enable a secure connection (LDAPS) between AIOps and an external LDAP server, you must import the LDAP server’s Certificate Authority (CA) certificate into the platform’s truststore.</p>
+<p>Without this step, AIOps will reject the connection with a “Handshake Failed” or “Unknown CA” error.</p>
+<section id="prerequisites" class="level2">
+<h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
+<ul>
+<li><strong>Access:</strong> <code>kubectl</code> access to the cluster.</li>
+<li><strong>Certificate:</strong> The CA certificate file (e.g., <code>ca.crt</code>) that signed your LDAP server’s certificate.
+<ul>
+<li><em>Note:</em> This must be the <strong>Root CA</strong> of the LDAP server, not an ingress certificate or a client certificate.</li>
+</ul></li>
+</ul>
+</section>
+<section id="procedure" class="level2">
+<h2 class="anchored" data-anchor-id="procedure">Procedure</h2>
+<section id="encode-the-certificate" class="level3">
+<h3 class="anchored" data-anchor-id="encode-the-certificate">1. Encode the Certificate</h3>
+<p>The certificate must be converted to a single-line Base64 string to be stored in a Kubernetes Secret.</p>
+<p>Run the following command on your infrastructure node (Linux):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace 'ca.crt' with your actual filename</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ca.crt <span class="kw">|</span> <span class="fu">base64</span> <span class="at">-w</span> 0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Mac Users: If you are running this on macOS, use cat ca.crt | base64 (omit the -w 0).</p>
+</div>
+</div>
+<p>Copy the output string to your clipboard. It will look like a long random string (e.g., <code>LS0tLS1CRUdJTi...</code>).</p>
+</section>
+<section id="edit-the-aiops-trust-secret" class="level3">
+<h3 class="anchored" data-anchor-id="edit-the-aiops-trust-secret">2. Edit the AIOps Trust Secret</h3>
+<p>AIOps uses a specific secret named platform-auth-ldaps-ca-cert to store trusted LDAP certificates.</p>
+<ol type="1">
+<li><p>Open the secret for editing:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> edit secret platform-auth-ldaps-ca-cert <span class="at">-n</span> aiops</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p>Locate the <code>data</code> section.</p></li>
+<li><p>Find the key named <code>certificate</code>.</p>
+<ul>
+<li><em>If the key exists:</em> Replace the existing value.</li>
+<li><em>If the key is empty/missing:</em> Add <code>certificate:</code> followed by your string.</li>
+</ul>
+<p>It should look like this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">certificate</span><span class="kw">:</span><span class="at"> &lt;PASTE_YOUR_BASE64_STRING_HERE&gt;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> platform-auth-ldaps-ca-cert</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> aiops</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">type</span><span class="kw">:</span><span class="at"> Opaque</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p>Save and exit the editor (usually <code>Esc</code> then <code>:wq</code> if using vi).</p></li>
+</ol>
+</section>
+<section id="restart-the-authentication-service" class="level3">
+<h3 class="anchored" data-anchor-id="restart-the-authentication-service">3. Restart the Authentication Service</h3>
+<p>The authentication pods do not automatically reload the secret. You must restart them to pick up the new certificate.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> delete pod <span class="at">-l</span> component=platform-auth-service <span class="at">-n</span> aiops</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Wait for the pods to come back up to the <code>Running</code> state:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-l</span> component=platform-auth-service <span class="at">-n</span> aiops <span class="at">-w</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="verify-connectivity" class="level3">
+<h3 class="anchored" data-anchor-id="verify-connectivity">4. Verify Connectivity</h3>
+<p>Once the pods are running, you can test the connection via the AIOps Console or by checking the logs.</p>
+<p>To check the logs for successful connection attempts:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> aiops <span class="at">-l</span> component=platform-auth-service <span class="at">-f</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="troubleshooting-common-errors" class="level3">
+<h3 class="anchored" data-anchor-id="troubleshooting-common-errors">Troubleshooting Common Errors</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 40%">
+<col style="width: 59%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Log Error</th>
+<th>Probable Cause</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ETIMEDOUT</code></td>
+<td><strong>Firewall / Network:</strong> The pod cannot reach the LDAP IP on port 636.</td>
+</tr>
+<tr class="even">
+<td><code>Handshake failed</code></td>
+<td><strong>Certificate:</strong> The CA cert in the secret is wrong or expired.</td>
+</tr>
+<tr class="odd">
+<td><code>PKIX path building failed</code></td>
+<td><strong>Trust:</strong> The server provided a cert that the secret’s CA does not sign.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
 <section id="self-monitoring" class="level1">
 <h1>Self Monitoring</h1>
 <hr>
@@ -291,55 +404,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>In the webhook configuration screen, locate the <strong>Mapping</strong> section.</li>
 <li>Use the following JSONata mapping:</li>
 </ol>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="er">(</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="er">/*</span> <span class="er">Set</span> <span class="er">resource</span> <span class="er">based</span> <span class="er">on</span> <span class="er">labels</span> <span class="er">available</span> <span class="er">*/</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="er">$resource</span> <span class="er">:=</span> <span class="er">function($labels)</span><span class="fu">{</span><span class="er">(</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      <span class="er">$name</span> <span class="fu">:</span><span class="er">=</span> <span class="er">$labels.name</span> <span class="er">?</span> <span class="er">$labels.name</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.node_name</span> <span class="er">?</span> <span class="er">$labels.node_name</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.statefulset</span> <span class="er">?</span> <span class="er">$labels.statefulset</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.deployment</span> <span class="er">?</span> <span class="er">$labels.deployment</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.daemonset</span> <span class="er">?</span> <span class="er">$labels.daemonset</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.pod</span> <span class="er">?</span> <span class="er">$labels.pod</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.container</span> <span class="er">?</span> <span class="er">$labels.container</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.instance</span> <span class="er">?</span> <span class="er">$labels.instance</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.app</span> <span class="er">?</span> <span class="er">$labels.app</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.job_name</span> <span class="er">?</span> <span class="er">$labels.job_name</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.job</span> <span class="er">?</span> <span class="er">$labels.job</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.type</span> <span class="er">?</span> <span class="er">$labels.type:</span> <span class="er">$labels.prometheus;</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>      <span class="er">/*</span> <span class="er">Conditional</span> <span class="er">Namespace</span> <span class="er">Append</span> <span class="er">*/</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>      <span class="er">$namespace_appended</span> <span class="er">:=</span> <span class="er">$labels.namespace</span> <span class="er">?</span> <span class="er">($name</span> <span class="er">&amp;</span> <span class="er">'/'</span> <span class="er">&amp;</span> <span class="er">$labels.namespace)</span> <span class="er">:</span> <span class="er">$name;</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      <span class="er">/*</span> <span class="er">Check</span> <span class="er">if</span> <span class="er">the</span> <span class="er">determined</span> <span class="er">$name</span> <span class="er">is</span> <span class="er">likely</span> <span class="er">a</span> <span class="er">node/hardware</span> <span class="er">name</span> <span class="er">*/</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>      <span class="er">$is_node_alert</span> <span class="er">:=</span> <span class="er">$labels.node_name</span> <span class="er">or</span> <span class="er">$labels.instance;</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="er">$is_node_alert</span> <span class="er">?</span> <span class="er">$name</span> <span class="er">:</span> <span class="er">$namespace_appended;</span> <span class="er">/*</span> <span class="er">Only</span> <span class="er">append</span> <span class="er">if</span> <span class="er">NOT</span> <span class="er">a</span> <span class="er">node</span> <span class="er">alert</span> <span class="er">*/</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="er">)</span><span class="fu">}</span><span class="er">;</span>    </span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="er">/*</span> <span class="er">Map</span> <span class="er">to</span> <span class="er">event</span> <span class="er">schema</span> <span class="er">*/</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="er">alerts.(</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span> </span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"summary"</span><span class="fu">:</span> <span class="er">annotations.summary</span> <span class="er">?</span> <span class="er">annotations.summary:</span> <span class="er">annotations.description</span> <span class="er">?</span> <span class="er">annotations.description</span> <span class="er">:</span> <span class="er">annotations.message</span> <span class="er">?</span> <span class="er">annotations.message</span><span class="fu">,</span></span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"severity"</span><span class="fu">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"critical"</span> <span class="er">?</span> <span class="dv">6</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"major"</span> <span class="er">?</span> <span class="dv">5</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"minor"</span> <span class="er">?</span> <span class="dv">4</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"warning"</span> <span class="er">?</span> <span class="dv">3</span> <span class="er">:</span> <span class="dv">1</span><span class="fu">,</span> </span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"resource"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"name"</span><span class="fu">:</span> <span class="er">$resource(labels)</span></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"eventType"</span><span class="fu">:</span> <span class="er">$lowercase(status)</span> <span class="er">=</span> <span class="st">"firing"</span> <span class="er">?</span> <span class="st">"problem"</span><span class="er">:</span> <span class="st">"resolution"</span><span class="fu">,</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"classification"</span><span class="fu">:</span> <span class="er">labels.alertname</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"links"</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>          <span class="fu">{</span></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>              <span class="dt">"url"</span><span class="fu">:</span> <span class="er">generatorURL</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>          <span class="fu">}</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"sender"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Prometheus"</span><span class="fu">,</span></span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"Webhook Connector"</span></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>       <span class="dt">"details"</span><span class="fu">:</span> <span class="er">labels</span></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="er">)</span></span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="er">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="er">(</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="er">/*</span> <span class="er">Set</span> <span class="er">resource</span> <span class="er">based</span> <span class="er">on</span> <span class="er">labels</span> <span class="er">available</span> <span class="er">*/</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="er">$resource</span> <span class="er">:=</span> <span class="er">function($labels)</span><span class="fu">{</span><span class="er">(</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>      <span class="er">$name</span> <span class="fu">:</span><span class="er">=</span> <span class="er">$labels.name</span> <span class="er">?</span> <span class="er">$labels.name</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.node_name</span> <span class="er">?</span> <span class="er">$labels.node_name</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.statefulset</span> <span class="er">?</span> <span class="er">$labels.statefulset</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.deployment</span> <span class="er">?</span> <span class="er">$labels.deployment</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.daemonset</span> <span class="er">?</span> <span class="er">$labels.daemonset</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.pod</span> <span class="er">?</span> <span class="er">$labels.pod</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.container</span> <span class="er">?</span> <span class="er">$labels.container</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.instance</span> <span class="er">?</span> <span class="er">$labels.instance</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.app</span> <span class="er">?</span> <span class="er">$labels.app</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.job_name</span> <span class="er">?</span> <span class="er">$labels.job_name</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.job</span> <span class="er">?</span> <span class="er">$labels.job</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="er">:</span> <span class="er">$labels.type</span> <span class="er">?</span> <span class="er">$labels.type:</span> <span class="er">$labels.prometheus;</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>      <span class="er">/*</span> <span class="er">Conditional</span> <span class="er">Namespace</span> <span class="er">Append</span> <span class="er">*/</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>      <span class="er">$namespace_appended</span> <span class="er">:=</span> <span class="er">$labels.namespace</span> <span class="er">?</span> <span class="er">($name</span> <span class="er">&amp;</span> <span class="er">'/'</span> <span class="er">&amp;</span> <span class="er">$labels.namespace)</span> <span class="er">:</span> <span class="er">$name;</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>      <span class="er">/*</span> <span class="er">Check</span> <span class="er">if</span> <span class="er">the</span> <span class="er">determined</span> <span class="er">$name</span> <span class="er">is</span> <span class="er">likely</span> <span class="er">a</span> <span class="er">node/hardware</span> <span class="er">name</span> <span class="er">*/</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>      <span class="er">$is_node_alert</span> <span class="er">:=</span> <span class="er">$labels.node_name</span> <span class="er">or</span> <span class="er">$labels.instance;</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>      <span class="er">$is_node_alert</span> <span class="er">?</span> <span class="er">$name</span> <span class="er">:</span> <span class="er">$namespace_appended;</span> <span class="er">/*</span> <span class="er">Only</span> <span class="er">append</span> <span class="er">if</span> <span class="er">NOT</span> <span class="er">a</span> <span class="er">node</span> <span class="er">alert</span> <span class="er">*/</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="er">)</span><span class="fu">}</span><span class="er">;</span>    </span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="er">/*</span> <span class="er">Map</span> <span class="er">to</span> <span class="er">event</span> <span class="er">schema</span> <span class="er">*/</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="er">alerts.(</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span> </span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"summary"</span><span class="fu">:</span> <span class="er">annotations.summary</span> <span class="er">?</span> <span class="er">annotations.summary:</span> <span class="er">annotations.description</span> <span class="er">?</span> <span class="er">annotations.description</span> <span class="er">:</span> <span class="er">annotations.message</span> <span class="er">?</span> <span class="er">annotations.message</span><span class="fu">,</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"severity"</span><span class="fu">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"critical"</span> <span class="er">?</span> <span class="dv">6</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"major"</span> <span class="er">?</span> <span class="dv">5</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"minor"</span> <span class="er">?</span> <span class="dv">4</span> <span class="er">:</span> <span class="er">$lowercase(labels.severity)</span> <span class="er">=</span> <span class="st">"warning"</span> <span class="er">?</span> <span class="dv">3</span> <span class="er">:</span> <span class="dv">1</span><span class="fu">,</span> </span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"resource"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"name"</span><span class="fu">:</span> <span class="er">$resource(labels)</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"eventType"</span><span class="fu">:</span> <span class="er">$lowercase(status)</span> <span class="er">=</span> <span class="st">"firing"</span> <span class="er">?</span> <span class="st">"problem"</span><span class="er">:</span> <span class="st">"resolution"</span><span class="fu">,</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"classification"</span><span class="fu">:</span> <span class="er">labels.alertname</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"links"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>          <span class="fu">{</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>              <span class="dt">"url"</span><span class="fu">:</span> <span class="er">generatorURL</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>          <span class="fu">}</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>        <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"sender"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"name"</span><span class="fu">:</span> <span class="st">"Prometheus"</span><span class="fu">,</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"Webhook Connector"</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>       <span class="dt">"details"</span><span class="fu">:</span> <span class="er">labels</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="er">)</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  <span class="er">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ol start="3" type="1">
 <li>Click <strong>Save</strong>.</li>
 </ol>
@@ -372,39 +485,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Edit the <code>coredns-custom</code> ConfigMap in the <code>kube-system</code> namespace to include the webhook domain, mapping it to your HAProxy IP (<code>192.168.252.9</code>). This approach is necessary since standard Kubernetes DNS does not resolve external domains.</p>
 <p><strong>Note</strong>: Replace <code>192.168.252.9</code> with your actual HAProxy IP if different. Replace <code>&lt;webhook route&gt;</code> with the fqdn from the webhook route generated by AIOps (e.g.&nbsp;<code>whconn-d59baea5-a620-4efd-bfdc-bbbce5314530-aiops.aiops-haproxy.gym.lan</code>)</p>
 <p><strong>Additional Note</strong>: The below ConfigMap also contains additional DNS mapping to the CloudPak console and the AIOPs UI. This may or may not be applicable to your environment.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> <span class="at">-</span> <span class="op">&lt;&lt;EOF</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="st">apiVersion: v1</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="st">kind: ConfigMap</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="st">metadata:</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="st">  name: coredns-custom</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">  namespace: kube-system</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">apiVersion: v1</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="st">data:</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="st">  default.server: |</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="st">    cp-console-aiops.aiops-haproxy.gym.lan {</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 cp-console-aiops.aiops-haproxy.gym.lan</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="st">    aiops-cpd.aiops-haproxy.gym.lan {</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 aiops-cpd.aiops-haproxy.gym.lan</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;webhook route&gt; {</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 &lt;webhook route&gt;</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> <span class="at">-</span> <span class="op">&lt;&lt;EOF</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="st">apiVersion: v1</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="st">kind: ConfigMap</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="st">metadata:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="st">  name: coredns-custom</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="st">  namespace: kube-system</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="st">apiVersion: v1</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="st">data:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="st">  default.server: |</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="st">    cp-console-aiops.aiops-haproxy.gym.lan {</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 cp-console-aiops.aiops-haproxy.gym.lan</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="st">    aiops-cpd.aiops-haproxy.gym.lan {</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 aiops-cpd.aiops-haproxy.gym.lan</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;webhook route&gt; {</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="st">        hosts {</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="st">              192.168.252.9 &lt;webhook route&gt;</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="st">              fallthrough</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="restart-coredns" class="level4">
 <h4 class="anchored" data-anchor-id="restart-coredns">Restart CoreDNS</h4>
 <p>Force CoreDNS to reload the new ConfigMap by restarting the deployment:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> <span class="at">-n</span> kube-system rollout restart deployment coredns</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> <span class="at">-n</span> kube-system rollout restart deployment coredns</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 <p>After CoreDNS restarts, the Alertmanager will be able to resolve the hostname, and all firing alerts will successfully flow to your AIOps webhook.</p>
 <hr>
@@ -417,37 +530,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h4 class="anchored" data-anchor-id="define-the-alertmanagerconfig-cr">Define the AlertmanagerConfig CR</h4>
 <p>Create or update the <code>AlertmanagerConfig</code> CR (named <code>aiops-webhook-receiver</code> in this example) to include the receiver and routing.</p>
 <p>Replace the sample webhook route <code>https://whconn-d59baea5-a620-4efd-bfdc-bbbce5314530-aiops.aiops-haproxy.gym.lan/webhook-connector/fj3u0bq23tk</code> with your actual webhook route and save to a file named <code>aiops-alertmanagerconfig.yaml</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> monitoring.coreos.com/v1alpha1</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> AlertmanagerConfig</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> aiops-webhook-receiver</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> prometheus-operator</span><span class="co"> # Must be in the same namespace as Alertmanager</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">alertmanagerConfig</span><span class="kw">:</span><span class="at"> main</span><span class="co"> # Must match your Alertmanager CR selector</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">  # 1. Define the Receiver</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">receivers</span><span class="kw">:</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">'aiops-webhook-receiver'</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">webhookConfigs</span><span class="kw">:</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">url</span><span class="kw">:</span><span class="at"> </span><span class="st">'https://whconn-d59baea5-a620-4efd-bfdc-bbbce5314530-aiops.aiops-haproxy.gym.lan/webhook-connector/fj3u0bq23tk'</span><span class="co"> # REPLACE</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">sendResolved</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">        # Required for self-signed certificates</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">httpConfig</span><span class="kw">:</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">tlsConfig</span><span class="kw">:</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">insecureSkipVerify</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">  # 2. Define the Route</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">route</span><span class="kw">:</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">receiver</span><span class="kw">:</span><span class="at"> </span><span class="st">'aiops-webhook-receiver'</span><span class="co"> # Route all alerts to the new receiver</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupBy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'alertname'</span><span class="kw">,</span><span class="at"> </span><span class="st">'severity'</span><span class="kw">]</span><span class="at"> </span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupWait</span><span class="kw">:</span><span class="at"> 30s</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupInterval</span><span class="kw">:</span><span class="at"> 5m</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">repeatInterval</span><span class="kw">:</span><span class="at"> 4h</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> monitoring.coreos.com/v1alpha1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> AlertmanagerConfig</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> aiops-webhook-receiver</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> prometheus-operator</span><span class="co"> # Must be in the same namespace as Alertmanager</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">alertmanagerConfig</span><span class="kw">:</span><span class="at"> main</span><span class="co"> # Must match your Alertmanager CR selector</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">  # 1. Define the Receiver</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">receivers</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">'aiops-webhook-receiver'</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">webhookConfigs</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">url</span><span class="kw">:</span><span class="at"> </span><span class="st">'https://whconn-d59baea5-a620-4efd-bfdc-bbbce5314530-aiops.aiops-haproxy.gym.lan/webhook-connector/fj3u0bq23tk'</span><span class="co"> # REPLACE</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">sendResolved</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">        # Required for self-signed certificates</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">httpConfig</span><span class="kw">:</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">tlsConfig</span><span class="kw">:</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">insecureSkipVerify</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="co">  # 2. Define the Route</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">route</span><span class="kw">:</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">receiver</span><span class="kw">:</span><span class="at"> </span><span class="st">'aiops-webhook-receiver'</span><span class="co"> # Route all alerts to the new receiver</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupBy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'alertname'</span><span class="kw">,</span><span class="at"> </span><span class="st">'severity'</span><span class="kw">]</span><span class="at"> </span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupWait</span><span class="kw">:</span><span class="at"> 30s</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">groupInterval</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">repeatInterval</span><span class="kw">:</span><span class="at"> 4h</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="apply-the-configuration" class="level4">
 <h4 class="anchored" data-anchor-id="apply-the-configuration">Apply the Configuration</h4>
 <p>Apply the manifest:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> aiops-alertmanagerconfig.yaml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> aiops-alertmanagerconfig.yaml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
@@ -457,79 +570,79 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="trigger-storage-alert" class="level4">
 <h4 class="anchored" data-anchor-id="trigger-storage-alert">Trigger Storage Alert</h4>
 <p>Use the following script <code>trigger_disk_alert.sh</code> to trigger a storage alert on the root fileystem of an AIOps node.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configuration</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_PERCENT</span><span class="op">=</span>90</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="va">MOUNT_POINT</span><span class="op">=</span><span class="st">"/"</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="va">SAFETY_BUFFER_MB</span><span class="op">=</span>10 <span class="co"># Add 10MB buffer to ensure we pass the threshold</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_FILE</span><span class="op">=</span><span class="st">"/tmp/ROOT_FILL_FILE.bin"</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--- Disk Usage Alert Trigger ---"</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Get disk statistics for the root filesystem in Kilobytes (KB)</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Uses df -k to get output in KB for precise calculation</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="va">STATS</span><span class="op">=</span><span class="va">$(</span><span class="fu">df</span> <span class="at">-k</span> <span class="st">"</span><span class="va">${MOUNT_POINT}</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR==2{print $2, $3}'</span><span class="va">)</span><span class="kw">;</span> <span class="cf">then</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"Error: Failed to get disk statistics for </span><span class="va">${MOUNT_POINT}</span><span class="st">. Exiting."</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 1</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="va">TOTAL_KB</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">"</span><span class="va">$STATS</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $1}'</span><span class="va">)</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="va">USED_KB</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">"</span><span class="va">$STATS</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $2}'</span><span class="va">)</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># AVAILABLE_KB is not strictly needed for the calculation, but useful for debugging</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate percentages using integer arithmetic (multiplying by 100 first for precision)</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="va">CURRENT_PERCENT</span><span class="op">=</span><span class="va">$((</span> (<span class="va">USED_KB</span> <span class="op">*</span> <span class="dv">100</span>) <span class="op">/</span> <span class="va">TOTAL_KB</span> <span class="va">))</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert KB to MB for display purposes only</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="va">TOTAL_MB</span><span class="op">=</span><span class="va">$((</span> <span class="va">TOTAL_KB</span> <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="va">USED_MB</span><span class="op">=</span><span class="va">$((</span> <span class="va">USED_KB</span> <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Filesystem: </span><span class="va">${MOUNT_POINT}</span><span class="st">"</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Total Size: </span><span class="va">${TOTAL_MB}</span><span class="st"> MB"</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Used Size:  </span><span class="va">${USED_MB}</span><span class="st"> MB (</span><span class="va">${CURRENT_PERCENT}</span><span class="st">%)"</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Target:     </span><span class="va">${TARGET_PERCENT}</span><span class="st">% usage"</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Check if the disk is already above the target</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Integer check: If (Current Used KB * 100) is &gt;= (Total KB * Target Percent)</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">[</span> <span class="va">$((</span> <span class="va">USED_KB</span> <span class="op">*</span> <span class="dv">100</span> <span class="va">))</span> <span class="ot">-ge</span> <span class="va">$((</span> <span class="va">TOTAL_KB</span> <span class="op">*</span> <span class="va">TARGET_PERCENT</span> <span class="va">))</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"Current usage (</span><span class="va">${CURRENT_PERCENT}</span><span class="st">%) is already above the target (</span><span class="va">${TARGET_PERCENT}</span><span class="st">%). No file created."</span></span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 0</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Calculate the required KB to reach the target percentage</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="co"># T_target_KB = (TOTAL_KB * TARGET_PERCENT) / 100</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_USAGE_KB</span><span class="op">=</span><span class="va">$((</span> (<span class="va">TOTAL_KB</span> <span class="op">*</span> <span class="va">TARGET_PERCENT</span>) <span class="op">/</span> <span class="dv">100</span> <span class="va">))</span></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate buffer size in KB</span></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="va">SAFETY_BUFFER_KB</span><span class="op">=</span><span class="va">$((</span> <span class="va">SAFETY_BUFFER_MB</span> <span class="op">*</span> <span class="dv">1024</span> <span class="va">))</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Required KB = (Target KB - Current Used KB) + Safety Buffer KB</span></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="va">REQUIRED_KB</span><span class="op">=</span><span class="va">$((</span> <span class="va">TARGET_USAGE_KB</span> <span class="op">-</span> <span class="va">USED_KB</span> <span class="op">+</span> <span class="va">SAFETY_BUFFER_KB</span> <span class="va">))</span></span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Convert required KB to MB (dd count uses 1MB blocks) and round up</span></span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Use shell arithmetic for simple rounding up: (KB + 1023) / 1024</span></span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a><span class="va">REQUIRED_MB_COUNT</span><span class="op">=</span><span class="va">$((</span> (<span class="va">REQUIRED_KB</span> <span class="op">+</span> <span class="dv">1023</span>) <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Execute dd command</span></span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--------------------------------------"</span></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Creating file of size: </span><span class="va">${REQUIRED_MB_COUNT}</span><span class="st"> MB at </span><span class="va">${TARGET_FILE}</span><span class="st">"</span></span>
-<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"This will push usage over </span><span class="va">${TARGET_PERCENT}</span><span class="st">%..."</span></span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute the dd command using the calculated count</span></span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: Requires sudo access to write to the filesystem</span></span>
-<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dd if=/dev/zero of=<span class="st">"</span><span class="va">${TARGET_FILE}</span><span class="st">"</span> bs=1M count=<span class="st">"</span><span class="va">${REQUIRED_MB_COUNT}</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null</span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Final verification (Use awk to extract the percentage from df -h)</span></span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a><span class="va">NEW_PERCENT</span><span class="op">=</span><span class="va">$(</span><span class="fu">df</span> <span class="at">-h</span> <span class="st">"</span><span class="va">${MOUNT_POINT}</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR==2{print $5}'</span><span class="va">)</span></span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Creation complete."</span></span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"New usage: </span><span class="va">${NEW_PERCENT}</span><span class="st">"</span></span>
-<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--------------------------------------"</span></span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span> 0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configuration</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_PERCENT</span><span class="op">=</span>90</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="va">MOUNT_POINT</span><span class="op">=</span><span class="st">"/"</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="va">SAFETY_BUFFER_MB</span><span class="op">=</span>10 <span class="co"># Add 10MB buffer to ensure we pass the threshold</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_FILE</span><span class="op">=</span><span class="st">"/tmp/ROOT_FILL_FILE.bin"</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--- Disk Usage Alert Trigger ---"</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Get disk statistics for the root filesystem in Kilobytes (KB)</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Uses df -k to get output in KB for precise calculation</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="va">STATS</span><span class="op">=</span><span class="va">$(</span><span class="fu">df</span> <span class="at">-k</span> <span class="st">"</span><span class="va">${MOUNT_POINT}</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR==2{print $2, $3}'</span><span class="va">)</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"Error: Failed to get disk statistics for </span><span class="va">${MOUNT_POINT}</span><span class="st">. Exiting."</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 1</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="va">TOTAL_KB</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">"</span><span class="va">$STATS</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $1}'</span><span class="va">)</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="va">USED_KB</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">"</span><span class="va">$STATS</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $2}'</span><span class="va">)</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co"># AVAILABLE_KB is not strictly needed for the calculation, but useful for debugging</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate percentages using integer arithmetic (multiplying by 100 first for precision)</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="va">CURRENT_PERCENT</span><span class="op">=</span><span class="va">$((</span> (<span class="va">USED_KB</span> <span class="op">*</span> <span class="dv">100</span>) <span class="op">/</span> <span class="va">TOTAL_KB</span> <span class="va">))</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert KB to MB for display purposes only</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="va">TOTAL_MB</span><span class="op">=</span><span class="va">$((</span> <span class="va">TOTAL_KB</span> <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="va">USED_MB</span><span class="op">=</span><span class="va">$((</span> <span class="va">USED_KB</span> <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Filesystem: </span><span class="va">${MOUNT_POINT}</span><span class="st">"</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Total Size: </span><span class="va">${TOTAL_MB}</span><span class="st"> MB"</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Used Size:  </span><span class="va">${USED_MB}</span><span class="st"> MB (</span><span class="va">${CURRENT_PERCENT}</span><span class="st">%)"</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Target:     </span><span class="va">${TARGET_PERCENT}</span><span class="st">% usage"</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Check if the disk is already above the target</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Integer check: If (Current Used KB * 100) is &gt;= (Total KB * Target Percent)</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">[</span> <span class="va">$((</span> <span class="va">USED_KB</span> <span class="op">*</span> <span class="dv">100</span> <span class="va">))</span> <span class="ot">-ge</span> <span class="va">$((</span> <span class="va">TOTAL_KB</span> <span class="op">*</span> <span class="va">TARGET_PERCENT</span> <span class="va">))</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"Current usage (</span><span class="va">${CURRENT_PERCENT}</span><span class="st">%) is already above the target (</span><span class="va">${TARGET_PERCENT}</span><span class="st">%). No file created."</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 0</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Calculate the required KB to reach the target percentage</span></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="co"># T_target_KB = (TOTAL_KB * TARGET_PERCENT) / 100</span></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a><span class="va">TARGET_USAGE_KB</span><span class="op">=</span><span class="va">$((</span> (<span class="va">TOTAL_KB</span> <span class="op">*</span> <span class="va">TARGET_PERCENT</span>) <span class="op">/</span> <span class="dv">100</span> <span class="va">))</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate buffer size in KB</span></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a><span class="va">SAFETY_BUFFER_KB</span><span class="op">=</span><span class="va">$((</span> <span class="va">SAFETY_BUFFER_MB</span> <span class="op">*</span> <span class="dv">1024</span> <span class="va">))</span></span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Required KB = (Target KB - Current Used KB) + Safety Buffer KB</span></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a><span class="va">REQUIRED_KB</span><span class="op">=</span><span class="va">$((</span> <span class="va">TARGET_USAGE_KB</span> <span class="op">-</span> <span class="va">USED_KB</span> <span class="op">+</span> <span class="va">SAFETY_BUFFER_KB</span> <span class="va">))</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Convert required KB to MB (dd count uses 1MB blocks) and round up</span></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Use shell arithmetic for simple rounding up: (KB + 1023) / 1024</span></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="va">REQUIRED_MB_COUNT</span><span class="op">=</span><span class="va">$((</span> (<span class="va">REQUIRED_KB</span> <span class="op">+</span> <span class="dv">1023</span>) <span class="op">/</span> <span class="dv">1024</span> <span class="va">))</span></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Execute dd command</span></span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--------------------------------------"</span></span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Creating file of size: </span><span class="va">${REQUIRED_MB_COUNT}</span><span class="st"> MB at </span><span class="va">${TARGET_FILE}</span><span class="st">"</span></span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"This will push usage over </span><span class="va">${TARGET_PERCENT}</span><span class="st">%..."</span></span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute the dd command using the calculated count</span></span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: Requires sudo access to write to the filesystem</span></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dd if=/dev/zero of=<span class="st">"</span><span class="va">${TARGET_FILE}</span><span class="st">"</span> bs=1M count=<span class="st">"</span><span class="va">${REQUIRED_MB_COUNT}</span><span class="st">"</span> <span class="dv">2</span><span class="op">&gt;</span>/dev/null</span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Final verification (Use awk to extract the percentage from df -h)</span></span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a><span class="va">NEW_PERCENT</span><span class="op">=</span><span class="va">$(</span><span class="fu">df</span> <span class="at">-h</span> <span class="st">"</span><span class="va">${MOUNT_POINT}</span><span class="st">"</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR==2{print $5}'</span><span class="va">)</span></span>
+<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Creation complete."</span></span>
+<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"New usage: </span><span class="va">${NEW_PERCENT}</span><span class="st">"</span></span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"--------------------------------------"</span></span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span> 0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Run the script.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x trigger_disk_alert.sh <span class="kw">&amp;&amp;</span> <span class="ex">./trigger_disk_alert.sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x trigger_disk_alert.sh <span class="kw">&amp;&amp;</span> <span class="ex">./trigger_disk_alert.sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Sample output.</p>
 <pre><code>--- Disk Usage Alert Trigger ---
 Filesystem: /
@@ -559,7 +672,7 @@ New usage: 91%
 <section id="resolve-alert" class="level4">
 <h4 class="anchored" data-anchor-id="resolve-alert">Resolve Alert</h4>
 <p>On the same not where you triggered the disk usage script. Resolve the disk consumption by deleting the created file.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> rm <span class="at">-f</span> /tmp/ROOT_FILL_FILE.bin</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> rm <span class="at">-f</span> /tmp/ROOT_FILL_FILE.bin</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>After a few minutes, Prometheus will clear the alert and the clear action will cascade to AIOps.</p>
 <p><img src="images/aiops_alert_disk_usage_cleared.png" class="img-fluid"></p>
 
