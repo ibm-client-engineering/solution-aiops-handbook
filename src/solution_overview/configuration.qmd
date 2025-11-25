@@ -155,7 +155,7 @@ Once the pods are running, you can test the connection via the AIOps Console or 
 To check the logs for successful connection attempts:
 
 ```bash
-kubectl logs -n aiops -l component=platform-auth-service -f
+kubectl logs -n aiops -l app=platform-identity-provider -f
 ```
 
 ### Troubleshooting Common Errors
