@@ -311,10 +311,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     LDAP[("LDAP Server")]
 
     subgraph "Authorization Flow"
-    User --&gt;|"1. Access UI"| AIOps
-    AIOps -.-&gt;|"2. Redirect for Auth"| IdP
-    IdP &lt;--&gt;|"3. Verify Creds and Fetch Groups"| LDAP
-    IdP == "4. SAML Token (User + Groups)" ==&gt; AIOps
+    User --&gt;|"(1) Access UI"| AIOps
+    AIOps -.-&gt;|"(2) Redirect for Auth"| IdP
+    IdP &lt;--&gt;|"(3) Verify Creds and Fetch Groups"| LDAP
+    IdP == "(4) SAML Token (User + Groups)" ==&gt; AIOps
     end
 
     style AIOps fill:#14164a,stroke:#333,stroke-width:2px
@@ -370,11 +370,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     LDAP[("LDAP Server")]
 
     subgraph "Authorization Flow"
-    User --&gt;|"1. Access UI"| AIOps
-    AIOps -.-&gt;|"2. Redirect for Auth"| IdP
-    IdP &lt;--&gt;|"3. Verify Creds Only"| LDAP
-    IdP == "4. SAML Token (User Only)" ==&gt; AIOps
-    AIOps &lt;--&gt;|"5. Direct Query: Get User Groups"| LDAP
+    User --&gt;|"(1) Access UI"| AIOps
+    AIOps -.-&gt;|"(2) Redirect for Auth"| IdP
+    IdP &lt;--&gt;|"(3) Verify Creds Only"| LDAP
+    IdP == "(4) SAML Token (User Only)" ==&gt; AIOps
+    AIOps &lt;--&gt;|"(5) Direct Query: Get User Groups"| LDAP
     end
 
     style AIOps fill:#f9f,stroke:#333,stroke-width:2px
