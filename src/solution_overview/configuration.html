@@ -481,7 +481,7 @@ Tip
 <h3 class="anchored" data-anchor-id="verify-connectivity">4. Verify Connectivity</h3>
 <p>Once the pods are running, you can test the connection via the AIOps Console or by checking the logs.</p>
 <p>To check the logs for successful connection attempts:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> aiops <span class="at">-l</span> component=platform-auth-service <span class="at">-f</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> aiops <span class="at">-l</span> app=platform-identity-provider <span class="at">-f</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="troubleshooting-common-errors" class="level3">
 <h3 class="anchored" data-anchor-id="troubleshooting-common-errors">Troubleshooting Common Errors</h3>
