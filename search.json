@@ -65,6 +65,61 @@
     ]
   },
   {
+    "objectID": "src/solution_overview/configuration.html#overview",
+    "href": "src/solution_overview/configuration.html#overview",
+    "title": "AIOps on Linux Configuration",
+    "section": "Overview",
+    "text": "Overview\nThis documentation outlines the configuration of SAML authentication for IBM Cloud Pak for AIOps on Linux (k3s) using Keycloak as the Identity Provider (IdP). This setup does not use LDAP; users are managed directly within Keycloak and authorized via Groups in AIOps.\n\nPrerequisites\n\nAIOps Platform: IBM Cloud Pak for AIOps running on Linux (k3s environment).\nKeycloak: Version 26.4.7 or later installed.\nCredentials:\n\nKeycloak Default Admin: admin / admin\nAIOps Administrator: cpadmin",
+    "crumbs": [
+      "Solution Overview",
+      "Configure"
+    ]
+  },
+  {
+    "objectID": "src/solution_overview/configuration.html#keycloak-initial-configuration",
+    "href": "src/solution_overview/configuration.html#keycloak-initial-configuration",
+    "title": "AIOps on Linux Configuration",
+    "section": "Keycloak Initial Configuration",
+    "text": "Keycloak Initial Configuration\n\nLogin and Realm Creation\n\nLog in to the Keycloak Admin Console using the default credentials (admin / admin).\nOpen the Manage realms menu on the top-left sidebar.\nClick the Create realm button.\nEnter the Realm name: AIOpsRealm.\nClick Create.\n\n\n\n\n\n\n\nNoteWhy create a new Realm?\n\n\n\nWe create a dedicated realm rather than using Master to isolate the AIOps application data. A realm manages a set of users, credentials, roles, and groups. Using a separate realm ensures that application-specific configurations do not impact the administrative Master realm.\n\n\n\n\nCreate a Sample User\n\nEnsure you are in the AIOpsRealm.\nClick Users in the left menu.\nClick Create new user.\nFill in the details:\n\nUsername: aiops-test-user\nEmail: aiops-test@example.com\nFirst Name: AIOps\nLast Name: Tester\nEmail Verified: Toggle to Yes.\n\nClick Create.\nClick the Credentials tab at the top of the user profile.\nClick Set Password.\nEnter a password (e.g., Password123!), toggle Temporary to Off, and click Save.\n\n\n\nCreate a Group\n\nClick the Groups menu on the left sidebar.\nClick Create group.\nEnter the name: aiops-analysts.\nClick Create.\nNavigate back to Users (left menu) and select aiops-test-user.\nClick the Groups tab.\nClick Join Group, select aiops-analysts, and click Join.",
+    "crumbs": [
+      "Solution Overview",
+      "Configure"
+    ]
+  },
+  {
+    "objectID": "src/solution_overview/configuration.html#saml-configuration-handshake",
+    "href": "src/solution_overview/configuration.html#saml-configuration-handshake",
+    "title": "AIOps on Linux Configuration",
+    "section": "SAML Configuration Handshake",
+    "text": "SAML Configuration Handshake\nConfiguring SAML requires a specific “handshake”: starting in AIOps to get the Service Provider metadata, moving to Keycloak to create the client, and finishing in AIOps with the IdP metadata.\n\nStep 1: Start AIOps Configuration (Download SP Metadata)\n\nLog in to the AIOps Console as cpadmin.\nNavigate to Administration &gt; Access Control.\nClick Identity Providers.\nClick New Connection &gt; SAML 2.0.\nEnter the Connection Name: KeycloakSAML.\nStop here. Do not close this window.\nLocate the section titled To identity provider.\nClick the Download metadata button.\nThis saves a file named metadata.xml. Keep this file accessible.\n\n\n\nStep 2: Configure Keycloak Client (Import SP Metadata)\n\nReturn to the Keycloak Admin Console (AIOpsRealm).\nClick Clients in the left menu.\nClick Import client.\nClick Browse and select the metadata.xml file you downloaded from AIOps.\nKeycloak will parse the file.\n\nClient type: Ensure this is SAML.\nClient ID: This will be a long URL (e.g., https://&lt;host&gt;/idauth/ibm/saml20/defaultSP). Do not change this; it must match the Entity ID expected by AIOps.\nName: This will be blank. Enter AIOps to make it easier to find in the list later.\n\nClick Save.\n\n\n\nStep 3: Configure Client Settings (NameID)\nAIOps maps Sub (Subject) to nameID by default. You do not need a mapper for this, but you must tell Keycloak to send the Username as the Subject in the standard SAML header.\n\nIn the Client details screen (Settings tab) for the new AIOps client:\nScroll down to the SAML capabilities or Signature and Encryption section.\nEnsure Sign documents is toggled On.\nScroll to the Login settings (or Advanced settings depending on Keycloak version).\nFind Name ID Format. Set this to username.\n\nNote: This ensures that the &lt;Subject&gt; field in the SAML assertion contains the aiops-test-user username, which AIOps will map to Sub.\n\nToggle Force Name ID Format to On.\nClick Save.\n\n\n\nStep 4: Configure Token Mappers in Keycloak\nAIOps expects specific attribute names by default (firstName, lastName, emailAddress, blueGroups). We must map Keycloak values to these exact names.\n\nClick the Client scopes tab within the AIOps client details.\nClick the *-dedicated scope (e.g., ...-dedicated).\nAdd the Mappers:\n\nFirst Name:\n\nClick Configure a new mapper (or Add mapper &gt; By configuration).\nSelect User Property.\nName: givenName mapping\nProperty: firstName\nSAML Attribute Name: firstName\nClick Save.\n\nLast Name:\n\nClick Add mapper &gt; By configuration &gt; User Property.\nName: familyName mapping\nProperty: lastName\nSAML Attribute Name: lastName\nClick Save.\n\nEmail:\n\nClick Add mapper &gt; By configuration &gt; User Property.\nName: email mapping\nProperty: email\nSAML Attribute Name: emailAddress\nClick Save.\n\nGroups:\n\nClick Add mapper &gt; By configuration &gt; Group list.\nName: group mapping\nSAML Attribute Name: blueGroups\nFull group path: Off (To send aiops-analysts instead of /aiops-analysts).\nClick Save.\n\n\n\n\n\nStep 5: Export Keycloak IdP Metadata\n\nIn Keycloak, go to Realm Settings (left menu).\nUnder the General tab, scroll down to the Endpoints (or SAML Metadata) section.\nClick SAML 2.0 Identity Provider Metadata.\nThis will open the XML in a new browser tab. Save this page as keycloak-idp-metadata.xml.\n\n\n\nStep 6: Finish AIOps Configuration (Upload IdP Metadata)\n\nReturn to the AIOps Console wizard (where you left off in Step 1).\nScroll to the section titled From identity provider.\nUpload the keycloak-idp-metadata.xml file you just saved.\nReview the Token attribute mapping section. It should display the defaults:\n\nSub: nameID (Matches the “Name ID Format: username” setting in Keycloak).\nGiven Name: firstName (Matches our mapper).\nFamily name: lastName (Matches our mapper).\nGroups: blueGroups (Matches our mapper).\nEmail: emailAddress (Matches our mapper).\n\nClick Create (or Save).",
+    "crumbs": [
+      "Solution Overview",
+      "Configure"
+    ]
+  },
+  {
+    "objectID": "src/solution_overview/configuration.html#configuring-group-access-api-workaround",
+    "href": "src/solution_overview/configuration.html#configuring-group-access-api-workaround",
+    "title": "AIOps on Linux Configuration",
+    "section": "Configuring Group Access (API Workaround)",
+    "text": "Configuring Group Access (API Workaround)\nBecause the Foundational Services layer on k3s does not always automatically populate SAML groups in the UI, we must manually create a User Group using the internal API and map the Keycloak group to it.\nPerform the following steps on your Linux terminal where you have kubectl access to the cluster.\n\n1. Set Environment Variables\nDefine the Ingress hosts for your environment. Ensure these URLs are resolvable from your terminal.\n# Example hosts - update these to match your specific k3s ingress routes\nexport ZENHOST=https://aiops-cpd.aiops-haproxy.gym.lan\nexport CPHOST=https://cp-console-aiops.aiops-haproxy.gym.lan\n\n\n2. Retrieve Credentials and Generate Tokens\nWe need to retrieve the cpadmin password from the Kubernetes secret and use it to generate two tokens: an IAM token and a Zen token.\n# Get credentials using kubectl\nexport USERNAME=`kubectl get secret platform-auth-idp-credentials -o json | jq -r .data.admin_username| base64 -d`\nexport PASSWORD=`kubectl get secret platform-auth-idp-credentials -o json | jq -r .data.admin_password| base64 -d`\n\n# Generate IAM Token\nIAM_TOKEN=$(curl -k -X POST -H \"Content-Type: application/x-www-form-urlencoded;charset=UTF-8\" -d \"grant_type=password&username=${USERNAME}&password=${PASSWORD}&scope=openid\" \"${CPHOST}/idprovider/v1/auth/identitytoken\" 2&gt; /dev/null | jq -r \".access_token\")\n\n# Generate Zen Token\nZENTOKEN=$(curl -k -X GET \"${ZENHOST}/v1/preauth/validateAuth\" --header \"username: ${USERNAME}\" --header \"iam-token: ${IAM_TOKEN}\" 2&gt; /dev/null | jq -r '.accessToken')\n\n\n3. Identify the Desired Role\nAIOps has specific internal role IDs. Run this command to see the available roles and their IDs.\ncurl -k -H \"Authorization: Bearer $ZENTOKEN\" -X GET $ZENHOST/usermgmt/v1/roles | jq -r '.rows[] | [ .doc.role_name, .doc._id ] | @csv ' | sed -e 's/,/|/g' -e 's/\\\"//g'\nCommon Output:\nAutomation Analyst|iaf-automation-analyst\nAutomation Developer|iaf-automation-developer\nUser|zen_user_role\nAdministrator|zen_administrator_role\nAutomation Administrator|iaf-automation-admin\nFor this guide, we will use iaf-automation-analyst to give our group Analyst permissions.\n\n\n4. Create the Internal Group\nWe will create a group inside AIOps named “AIOps Analysts” and assign it the Automation Analyst role.\n# Create the group and capture the output to find the new ID\ncurl -k -s -X POST \"${ZENHOST}/usermgmt/v2/groups\" \\\n  --header 'Content-Type: application/json' \\\n  --header 'Accept: application/json' \\\n  --header \"Authorization: Bearer ${ZENTOKEN}\" \\\n  -d '{\"name\": \"AIOps Analysts\", \"description\": \"Mapped SAML Group\", \"role_identifiers\": [\"iaf-automation-analyst\"]}' | jq .\nNote the id in the output. (Example: 10001).\n\n\n5. Map the Keycloak Group to the Internal Group\nFinally, we map the string aiops-analysts (which Keycloak sends in the blueGroups attribute) to the internal group ID we just created (e.g., 10001).\nReplace 10001 in the URL below with the actual ID returned in the previous step.\ncurl -k -s -X POST \"${ZENHOST}/usermgmt/v2/groups/10001/members\" \\\n  --header 'Content-Type: application/json' \\\n  --header 'Accept: application/json' \\\n  --header \"Authorization: Bearer ${ZENTOKEN}\" \\\n  -d '{\"idp_groups\": [\"aiops-analysts\"]}'",
+    "crumbs": [
+      "Solution Overview",
+      "Configure"
+    ]
+  },
+  {
+    "objectID": "src/solution_overview/configuration.html#verification",
+    "href": "src/solution_overview/configuration.html#verification",
+    "title": "AIOps on Linux Configuration",
+    "section": "Verification",
+    "text": "Verification\nNow that the group mapping is established via the API, the user should have immediate access upon login.\n\nOpen a Private/Incognito browser window.\nNavigate to the AIOps Console URL.\nSelect Enterprise SAML (or KeycloakSAML) from the login screen.\nRedirect to Keycloak -&gt; Log in as aiops-test-user.\nSuccess: You should be redirected back to the AIOps console and successfully logged in. The user will have the permissions defined by the Automation Analyst role.",
+    "crumbs": [
+      "Solution Overview",
+      "Configure"
+    ]
+  },
+  {
     "objectID": "src/solution_overview/configuration.html#setting-up-a-promethues-alertmanager-webhook-in-aiops",
     "href": "src/solution_overview/configuration.html#setting-up-a-promethues-alertmanager-webhook-in-aiops",
     "title": "AIOps on Linux Configuration",
